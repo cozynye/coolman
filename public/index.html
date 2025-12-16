@@ -42,6 +42,12 @@
       #searchButton:hover {
         background-color: #0056b3;
       }
+      .results-info {
+        text-align: center;
+        padding: 20px 0;
+        color: #666;
+        font-size: 14px;
+      }
       .results-container {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -53,10 +59,22 @@
         border-radius: 8px;
         padding: 15px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        transition: transform 0.2s;
+      }
+      .product-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
       }
       .product-card h3 {
         margin: 0 0 10px 0;
         font-size: 16px;
+      }
+      .product-card h3 a {
+        text-decoration: none;
+        color: #333;
+      }
+      .product-card h3 a:hover {
+        color: #007bff;
       }
       .product-card p {
         margin: 5px 0;
@@ -69,43 +87,44 @@
       .product-card .platform {
         color: #007bff;
         font-size: 14px;
+        font-weight: bold;
       }
       .loading {
         text-align: center;
         padding: 20px;
         display: none;
-      }
-      .pagination {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 10px;
-        padding: 20px 0;
-        flex-wrap: wrap;
-      }
-      .pagination button {
-        padding: 8px 16px;
-        border: 1px solid #ddd;
-        background: white;
-        cursor: pointer;
-        border-radius: 4px;
-        font-size: 14px;
-      }
-      .pagination button:hover:not(:disabled) {
-        background: #f0f0f0;
-      }
-      .pagination button:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-      .pagination button.active {
-        background: #007bff;
-        color: white;
-        border-color: #007bff;
-      }
-      .pagination .page-info {
-        padding: 0 10px;
         color: #666;
+      }
+      .loading-more {
+        text-align: center;
+        padding: 20px;
+        color: #666;
+        display: none;
+      }
+      .loading-more.show {
+        display: block;
+      }
+      .end-message {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+        display: none;
+      }
+      .end-message.show {
+        display: block;
+      }
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #007bff;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
       }
     </style>
   </head>
@@ -116,22 +135,33 @@
       <input type="text" id="searchInput" placeholder="검색어를 입력하세요 (예: 맥북, 아이패드)" />
       <button id="searchButton">검색</button>
     </div>
-    <div class="loading" id="loading">검색 중...</div>
-    <div class="pagination" id="pagination"></div>
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p style="margin-top: 10px;">검색 중...</p>
+    </div>
+    <div class="results-info" id="resultsInfo"></div>
     <div class="results-container" id="results"></div>
-    <div class="pagination" id="pagination-bottom"></div>
+    <div class="loading-more" id="loadingMore">
+      <div class="spinner"></div>
+      <p style="margin-top: 10px;">더 불러오는 중...</p>
+    </div>
+    <div class="end-message" id="endMessage">
+      <p>✓ 모든 결과를 불러왔습니다</p>
+    </div>
 
     <script>
       const searchInput = document.getElementById("searchInput");
       const searchButton = document.getElementById("searchButton");
       const resultsContainer = document.getElementById("results");
       const loadingElement = document.getElementById("loading");
-      const paginationTop = document.getElementById("pagination");
-      const paginationBottom = document.getElementById("pagination-bottom");
+      const loadingMore = document.getElementById("loadingMore");
+      const endMessage = document.getElementById("endMessage");
+      const resultsInfo = document.getElementById("resultsInfo");
 
       let allProducts = [];
-      let currentPage = 1;
-      const itemsPerPage = 50;
+      let displayedCount = 0;
+      const itemsPerLoad = 30; // 한 번에 로드할 아이템 수
+      let isLoading = false;
 
       async function searchProducts() {
         const keyword = searchInput.value.trim();
@@ -139,6 +169,10 @@
 
         loadingElement.style.display = "block";
         resultsContainer.innerHTML = "";
+        resultsInfo.innerHTML = "";
+        endMessage.classList.remove("show");
+        allProducts = [];
+        displayedCount = 0;
 
         try {
           const response = await fetch("/api/search", {
@@ -153,9 +187,7 @@
 
           if (response.ok) {
             allProducts = data.results || [];
-            currentPage = 1;
-            displayResults();
-            updatePagination();
+            displayInitialResults();
           } else {
             throw new Error(data.error || "검색 중 오류가 발생했습니다.");
           }
@@ -166,62 +198,79 @@
         }
       }
 
-      function displayResults() {
+      function displayInitialResults() {
         if (!allProducts || allProducts.length === 0) {
           resultsContainer.innerHTML = '<p style="text-align: center; padding: 40px; color: #999;">검색 결과가 없습니다.</p>';
-          paginationTop.innerHTML = '';
-          paginationBottom.innerHTML = '';
           return;
         }
 
-        const startIdx = (currentPage - 1) * itemsPerPage;
-        const endIdx = startIdx + itemsPerPage;
-        const pageProducts = allProducts.slice(startIdx, endIdx);
-
-        resultsContainer.innerHTML = `
-          <p style="grid-column: 1 / -1; text-align: center; color: #666; margin-bottom: 20px;">
-            총 ${allProducts.length}개의 검색 결과 (${startIdx + 1}-${Math.min(endIdx, allProducts.length)}개 표시)
-          </p>
-        ` + pageProducts
-          .map(
-            (product) => `
-                <div class="product-card">
-                    <span class="platform">${product.platform || '번개장터'}</span>
-                    <h3><a href="${product.link}" target="_blank">${product.title}</a></h3>
-                    <p class="price">${product.price}</p>
-                    <p style="font-size: 14px; color: #999;">${product.update_time}</p>
-                    <p style="font-size: 14px; color: #28a745;">${product.status}</p>
-                </div>
-            `
-          )
-          .join("");
+        updateResultsInfo();
+        loadMoreItems();
       }
 
-      function updatePagination() {
-        if (!allProducts || allProducts.length === 0) return;
+      function loadMoreItems() {
+        if (isLoading || displayedCount >= allProducts.length) {
+          if (displayedCount >= allProducts.length && displayedCount > 0) {
+            endMessage.classList.add("show");
+          }
+          return;
+        }
 
-        const totalPages = Math.ceil(allProducts.length / itemsPerPage);
-        const paginationHTML = `
-          <button onclick="changePage(1)" ${currentPage === 1 ? 'disabled' : ''}>처음</button>
-          <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>이전</button>
-          <span class="page-info">${currentPage} / ${totalPages} 페이지</span>
-          <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>다음</button>
-          <button onclick="changePage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>마지막</button>
+        isLoading = true;
+        loadingMore.classList.add("show");
+
+        // 실제 로딩 효과를 위한 약간의 딜레이
+        setTimeout(() => {
+          const nextItems = allProducts.slice(displayedCount, displayedCount + itemsPerLoad);
+
+          nextItems.forEach(product => {
+            const card = createProductCard(product);
+            resultsContainer.appendChild(card);
+          });
+
+          displayedCount += nextItems.length;
+          updateResultsInfo();
+
+          loadingMore.classList.remove("show");
+          isLoading = false;
+
+          // 모든 아이템을 로드했으면 종료 메시지 표시
+          if (displayedCount >= allProducts.length) {
+            endMessage.classList.add("show");
+          }
+        }, 300);
+      }
+
+      function createProductCard(product) {
+        const card = document.createElement("div");
+        card.className = "product-card";
+        card.innerHTML = `
+          <span class="platform">${product.platform || '번개장터'}</span>
+          <h3><a href="${product.link}" target="_blank">${product.title}</a></h3>
+          <p class="price">${product.price}</p>
+          <p style="font-size: 14px; color: #999;">${product.update_time}</p>
+          <p style="font-size: 14px; color: #28a745;">${product.status}</p>
+          ${product.location ? `<p style="font-size: 14px; color: #666;">📍 ${product.location}</p>` : ''}
         `;
-
-        paginationTop.innerHTML = paginationHTML;
-        paginationBottom.innerHTML = paginationHTML;
+        return card;
       }
 
-      function changePage(newPage) {
-        const totalPages = Math.ceil(allProducts.length / itemsPerPage);
-        if (newPage < 1 || newPage > totalPages) return;
-
-        currentPage = newPage;
-        displayResults();
-        updatePagination();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+      function updateResultsInfo() {
+        if (allProducts.length > 0) {
+          resultsInfo.innerHTML = `총 ${allProducts.length}개의 검색 결과 (${displayedCount}개 표시 중)`;
+        }
       }
+
+      // 무한 스크롤 이벤트 리스너
+      window.addEventListener("scroll", () => {
+        // 페이지 하단에서 300px 전에 도달하면 더 로드
+        const scrollPosition = window.innerHeight + window.scrollY;
+        const threshold = document.documentElement.scrollHeight - 300;
+
+        if (scrollPosition >= threshold && !isLoading && displayedCount < allProducts.length) {
+          loadMoreItems();
+        }
+      });
 
       searchButton.addEventListener("click", searchProducts);
       searchInput.addEventListener("keypress", (e) => {
