@@ -116,7 +116,8 @@ class Scraper {
                     link: `https://bunjang.co.kr/products/${item.pid}`,
                     update_time: new Date(item.update_time * 1000).toLocaleString('ko-KR'),
                     timestamp: item.update_time, // Unix timestamp for sorting
-                    status: this.getStatusText(item.status)
+                    status: this.getStatusText(item.status),
+                    image: item.product_image || item.image || 'https://via.placeholder.com/300x300?text=No+Image'
                 }));
 
             console.log(`검색된 총 상품 수: ${response.list.length}`);
@@ -199,7 +200,8 @@ class Scraper {
                     update_time: dateObj.toLocaleString('ko-KR'),
                     timestamp: timestamp, // Unix timestamp for sorting
                     status: this.getJoongnaStatusText(item.state),
-                    location: item.mainLocationName || '지역 미표시'
+                    location: item.mainLocationName || '지역 미표시',
+                    image: item.imageUrl || item.image || 'https://via.placeholder.com/300x300?text=No+Image'
                 };
             });
 
