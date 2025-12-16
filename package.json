@@ -2,9 +2,9 @@
   "name": "test1",
   "version": "1.0.0",
   "description": "중고나라 + 번개장터 통합 검색 서비스",
-  "main": "src/index.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["중고나라", "번개장터", "검색", "스크래퍼"],
