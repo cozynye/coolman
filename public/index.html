@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="중고나라와 번개장터를 한 번에 검색하세요. 중고 물품을 쉽고 빠르게 찾을 수 있는 통합 검색 서비스입니다." />
+    <meta name="keywords" content="중고나라, 번개장터, 중고거래, 중고물품, 통합검색, 중고검색" />
+    <meta name="author" content="중고 물품 통합 검색" />
+    <meta property="og:title" content="중고 물품 통합 검색 - 중고나라 + 번개장터" />
+    <meta property="og:description" content="중고나라와 번개장터를 한 번에 검색하는 통합 검색 서비스" />
+    <meta property="og:type" content="website" />
+    <title>중고 물품 통합 검색 - 중고나라 + 번개장터</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .search-container {
+        text-align: center;
+        margin: 20px 0;
+      }
+      #searchInput {
+        padding: 10px;
+        width: 300px;
+        font-size: 16px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      #searchButton {
+        padding: 10px 20px;
+        font-size: 16px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-left: 10px;
+      }
+      #searchButton:hover {
+        background-color: #0056b3;
+      }
+      .results-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+        padding: 20px 0;
+      }
+      .product-card {
+        background: white;
+        border-radius: 8px;
+        padding: 15px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .product-card h3 {
+        margin: 0 0 10px 0;
+        font-size: 16px;
+      }
+      .product-card p {
+        margin: 5px 0;
+        color: #666;
+      }
+      .product-card .price {
+        color: #e44d26;
+        font-weight: bold;
+      }
+      .product-card .platform {
+        color: #007bff;
+        font-size: 14px;
+      }
+      .loading {
+        text-align: center;
+        padding: 20px;
+        display: none;
+      }
+      .pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        padding: 20px 0;
+        flex-wrap: wrap;
+      }
+      .pagination button {
+        padding: 8px 16px;
+        border: 1px solid #ddd;
+        background: white;
+        cursor: pointer;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      .pagination button:hover:not(:disabled) {
+        background: #f0f0f0;
+      }
+      .pagination button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .pagination button.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+      }
+      .pagination .page-info {
+        padding: 0 10px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="search-container">
+      <h1>중고 물품 통합 검색</h1>
+      <p style="color: #666; margin-top: 10px;">중고나라 + 번개장터를 한번에 검색하세요</p>
+      <input type="text" id="searchInput" placeholder="검색어를 입력하세요 (예: 맥북, 아이패드)" />
+      <button id="searchButton">검색</button>
+    </div>
+    <div class="loading" id="loading">검색 중...</div>
+    <div class="pagination" id="pagination"></div>
+    <div class="results-container" id="results"></div>
+    <div class="pagination" id="pagination-bottom"></div>
+
+    <script>
+      const searchInput = document.getElementById("searchInput");
+      const searchButton = document.getElementById("searchButton");
+      const resultsContainer = document.getElementById("results");
+      const loadingElement = document.getElementById("loading");
+      const paginationTop = document.getElementById("pagination");
+      const paginationBottom = document.getElementById("pagination-bottom");
+
+      let allProducts = [];
+      let currentPage = 1;
+      const itemsPerPage = 50;
+
+      async function searchProducts() {
+        const keyword = searchInput.value.trim();
+        if (!keyword) return;
+
+        loadingElement.style.display = "block";
+        resultsContainer.innerHTML = "";
+
+        try {
+          const response = await fetch("/api/search", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ keyword }),
+          });
+
+          const data = await response.json();
+
+          if (response.ok) {
+            allProducts = data.results || [];
+            currentPage = 1;
+            displayResults();
+            updatePagination();
+          } else {
+            throw new Error(data.error || "검색 중 오류가 발생했습니다.");
+          }
+        } catch (error) {
+          alert(error.message);
+        } finally {
+          loadingElement.style.display = "none";
+        }
+      }
+
+      function displayResults() {
+        if (!allProducts || allProducts.length === 0) {
+          resultsContainer.innerHTML = '<p style="text-align: center; padding: 40px; color: #999;">검색 결과가 없습니다.</p>';
+          paginationTop.innerHTML = '';
+          paginationBottom.innerHTML = '';
+          return;
+        }
+
+        const startIdx = (currentPage - 1) * itemsPerPage;
+        const endIdx = startIdx + itemsPerPage;
+        const pageProducts = allProducts.slice(startIdx, endIdx);
+
+        resultsContainer.innerHTML = `
+          <p style="grid-column: 1 / -1; text-align: center; color: #666; margin-bottom: 20px;">
+            총 ${allProducts.length}개의 검색 결과 (${startIdx + 1}-${Math.min(endIdx, allProducts.length)}개 표시)
+          </p>
+        ` + pageProducts
+          .map(
+            (product) => `
+                <div class="product-card">
+                    <span class="platform">${product.platform || '번개장터'}</span>
+                    <h3><a href="${product.link}" target="_blank">${product.title}</a></h3>
+                    <p class="price">${product.price}</p>
+                    <p style="font-size: 14px; color: #999;">${product.update_time}</p>
+                    <p style="font-size: 14px; color: #28a745;">${product.status}</p>
+                </div>
+            `
+          )
+          .join("");
+      }
+
+      function updatePagination() {
+        if (!allProducts || allProducts.length === 0) return;
+
+        const totalPages = Math.ceil(allProducts.length / itemsPerPage);
+        const paginationHTML = `
+          <button onclick="changePage(1)" ${currentPage === 1 ? 'disabled' : ''}>처음</button>
+          <button onclick="changePage(${currentPage - 1})" ${currentPage === 1 ? 'disabled' : ''}>이전</button>
+          <span class="page-info">${currentPage} / ${totalPages} 페이지</span>
+          <button onclick="changePage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled' : ''}>다음</button>
+          <button onclick="changePage(${totalPages})" ${currentPage === totalPages ? 'disabled' : ''}>마지막</button>
+        `;
+
+        paginationTop.innerHTML = paginationHTML;
+        paginationBottom.innerHTML = paginationHTML;
+      }
+
+      function changePage(newPage) {
+        const totalPages = Math.ceil(allProducts.length / itemsPerPage);
+        if (newPage < 1 || newPage > totalPages) return;
+
+        currentPage = newPage;
+        displayResults();
+        updatePagination();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      searchButton.addEventListener("click", searchProducts);
+      searchInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") searchProducts();
+      });
+    </script>
+  </body>
+</html>
