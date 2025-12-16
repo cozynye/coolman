@@ -141,38 +141,17 @@ class Scraper {
      */
     async searchJoonggo(keyword) {
         try {
-            const apiUrl = 'https://search-api.joongna.com/v3/search/app';
-
-            // API 페이로드 (디폴트 값 사용)
-            const payload = {
-                adjustSearchKeyword: true,
-                categoryFilter: [{categoryDepth: 0, categorySeq: 0}],
-                filterTypeCheckoutByUser: false,
-                firstQuantity: 50,
-                jnPayYn: "ALL",
-                keywordSource: "INPUT_KEYWORD",
-                osType: 2,
-                page: 0,
-                parcelFeeYn: "ALL",
-                priceFilter: {maxPrice: 100000000, minPrice: 0},
-                quantity: 50,
-                registPeriod: "ALL",
-                saleYn: "SALE_N", // 판매완료 제외
-                searchWord: keyword,
-                sort: "RECOMMEND_SORT"
-            };
+            const apiUrl = `https://edge-live.joongna.com/api/web-ads/total?page=1&keyword=${encodeURIComponent(keyword)}&type=SEARCH_INNER_LIST`;
 
             console.log('중고나라 API 호출:', apiUrl);
             console.log('검색어:', keyword);
 
-            const response = await axios.post(apiUrl, payload, {
+            const response = await axios.get(apiUrl, {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
                     'Accept': 'application/json, text/plain, */*',
                     'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-                    'Content-Type': 'application/json',
-                    'Origin': 'https://m.joongna.com',
-                    'Referer': 'https://m.joongna.com/'
+                    'Referer': `https://web.joongna.com/search/${encodeURIComponent(keyword)}?keywordSource=INPUT_KEYWORD`
                 },
                 timeout: 10000
             });
@@ -188,20 +167,20 @@ class Scraper {
             console.log(`중고나라 검색 결과: ${items.length}개`);
 
             const results = items.map(item => {
-                // sortDate를 timestamp로 변환 (초 단위)
-                const dateObj = new Date(item.sortDate);
-                const timestamp = Math.floor(dateObj.getTime() / 1000);
+                // Unix timestamp를 Date로 변환
+                const updateDate = new Date(item.updateAt);
+                const timestamp = Math.floor(updateDate.getTime() / 1000);
 
                 return {
                     platform: '중고나라',
                     title: item.title,
-                    price: item.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "원",
+                    price: item.price ? item.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "원" : '가격문의',
                     link: `https://m.joongna.com/product/${item.seq}`,
-                    update_time: dateObj.toLocaleString('ko-KR'),
-                    timestamp: timestamp, // Unix timestamp for sorting
-                    status: this.getJoongnaStatusText(item.state),
-                    location: item.mainLocationName || '지역 미표시',
-                    image: item.imageUrl || item.image || 'https://via.placeholder.com/300x300?text=No+Image'
+                    update_time: updateDate.toLocaleString('ko-KR'),
+                    timestamp: timestamp,
+                    status: this.getJoongnaStatusText(item.status),
+                    location: item.location || '지역 미표시',
+                    image: item.images && item.images.length > 0 ? item.images[0] : 'https://via.placeholder.com/300x300?text=No+Image'
                 };
             });
 
