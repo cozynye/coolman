@@ -141,57 +141,88 @@ class Scraper {
      */
     async searchJoonggo(keyword) {
         try {
-            const apiUrl = `https://edge-live.joongna.com/api/web-ads/total?page=1&keyword=${encodeURIComponent(keyword)}&type=SEARCH_INNER_LIST`;
+            const pageUrl = `https://web.joongna.com/search/${encodeURIComponent(keyword)}?keywordSource=INPUT_KEYWORD`;
 
-            console.log('중고나라 API 호출:', apiUrl);
+            console.log('중고나라 페이지 요청:', pageUrl);
             console.log('검색어:', keyword);
 
-            const response = await axios.get(apiUrl, {
+            // HTML 페이지 가져오기
+            const response = await axios.get(pageUrl, {
                 headers: {
                     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-                    'Accept': 'application/json, text/plain, */*',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
                     'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-                    'Referer': `https://web.joongna.com/search/${encodeURIComponent(keyword)}?keywordSource=INPUT_KEYWORD`
+                    'Accept-Encoding': 'gzip, deflate, br'
                 },
-                timeout: 10000
+                timeout: 15000
             });
 
-            console.log('중고나라 API 응답 상태:', response.status);
+            console.log('중고나라 페이지 응답 상태:', response.status);
 
-            if (!response.data || !response.data.data || !response.data.data.items) {
+            // Cheerio로 HTML 파싱
+            const $ = cheerio.load(response.data);
+
+            // __NEXT_DATA__ 스크립트 태그 찾기
+            const nextDataScript = $('#__NEXT_DATA__').html();
+
+            if (!nextDataScript) {
+                console.log('중고나라: __NEXT_DATA__ 스크립트를 찾을 수 없음');
+                return [];
+            }
+
+            // JSON 파싱
+            const nextData = JSON.parse(nextDataScript);
+
+            // 경로: props.pageProps.dehydratedState.queries[2].state.data.data.items
+            const queries = nextData?.props?.pageProps?.dehydratedState?.queries;
+
+            if (!queries || queries.length < 3) {
+                console.log('중고나라: queries 데이터 구조가 예상과 다름');
+                return [];
+            }
+
+            // queries 배열에서 상품 데이터 찾기 (보통 index 2)
+            let items = null;
+            for (let i = 0; i < queries.length; i++) {
+                const queryData = queries[i]?.state?.data?.data?.items;
+                if (queryData && Array.isArray(queryData) && queryData.length > 0) {
+                    items = queryData;
+                    break;
+                }
+            }
+
+            if (!items || items.length === 0) {
                 console.log('중고나라 검색 결과 없음');
                 return [];
             }
 
-            const items = response.data.data.items;
             console.log(`중고나라 검색 결과: ${items.length}개`);
 
             const results = items.map(item => {
-                // Unix timestamp를 Date로 변환
-                const updateDate = new Date(item.updateAt);
+                // sortDate를 timestamp로 변환
+                const updateDate = new Date(item.sortDate);
                 const timestamp = Math.floor(updateDate.getTime() / 1000);
 
                 return {
                     platform: '중고나라',
                     title: item.title,
                     price: item.price ? item.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "원" : '가격문의',
-                    link: `https://m.joongna.com/product/${item.seq}`,
+                    link: `https://web.joongna.com/product/${item.seq}`,
                     update_time: updateDate.toLocaleString('ko-KR'),
                     timestamp: timestamp,
-                    status: this.getJoongnaStatusText(item.status),
-                    location: item.location || '지역 미표시',
-                    image: item.images && item.images.length > 0 ? item.images[0] : 'https://via.placeholder.com/300x300?text=No+Image'
+                    status: this.getJoongnaStatusText(item.state),
+                    location: item.mainLocationName || '지역 미표시',
+                    image: item.url || 'https://via.placeholder.com/300x300?text=No+Image'
                 };
             });
 
             return results;
         } catch (error) {
-            console.error('중고나라 API 호출 중 에러:', {
+            console.error('중고나라 페이지 파싱 중 에러:', {
                 키워드: keyword,
                 에러_메시지: error.message,
                 에러_종류: error.name,
-                응답_상태: error.response?.status,
-                응답_데이터: error.response?.data
+                응답_상태: error.response?.status
             });
             // 중고나라 검색 실패해도 빈 배열 반환 (번개장터 결과는 보여주기 위해)
             return [];
