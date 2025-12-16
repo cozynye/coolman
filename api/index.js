@@ -1,5 +1,5 @@
 const express = require('express');
-const Scraper = require('./scraper');
+const Scraper = require('../src/scraper');
 const axios = require('axios');
 
 const app = express();
@@ -134,11 +134,17 @@ process.on('SIGINT', async () => {
     process.exit();
 });
 
-// 서버 시작
+// 서버 시작 - Vercel에서는 자동으로 초기화됨
 initialize().catch(error => {
     console.error('초기화 중 에러:', error);
 });
 
-app.listen(port, () => {
-    console.log(`서버가 http://localhost:${port} 에서 실행 중입니다.`);
-});
+// 로컬 개발 환경에서만 listen
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(port, () => {
+        console.log(`서버가 http://localhost:${port} 에서 실행 중입니다.`);
+    });
+}
+
+// Vercel을 위한 export
+module.exports = app;
