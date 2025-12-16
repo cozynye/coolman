@@ -5,16 +5,19 @@
 ## ✨ 주요 기능
 
 ### 🔄 통합 검색
+
 - **번개장터 + 중고나라 동시 검색**: 한 번의 검색으로 두 플랫폼 모두 조회
 - **최신순 자동 정렬**: 두 플랫폼 결과를 최신 등록순으로 통합 정렬
 - **실시간 검색**: 최신 판매 상품만 필터링하여 표시
 
 ### 📄 페이징 시스템
+
 - **페이지당 50개 항목**: 읽기 편한 분량으로 결과 표시
 - **직관적인 페이지 이동**: 처음/이전/다음/마지막 버튼 제공
 - **자동 스크롤**: 페이지 이동 시 자동으로 상단 이동
 
 ### 🎨 사용자 경험
+
 - **반응형 디자인**: 모바일/태블릿/데스크톱 최적화
 - **SEO 최적화**: 검색 엔진 노출을 위한 메타데이터 설정
 - **빠른 로딩**: 클라이언트 사이드 페이징으로 빠른 탐색
@@ -99,6 +102,7 @@ http://localhost:3010
 특정 키워드로 번개장터와 중고나라를 검색합니다.
 
 **요청:**
+
 ```bash
 curl -X POST http://localhost:3010/api/search \
   -H "Content-Type: application/json" \
@@ -106,6 +110,7 @@ curl -X POST http://localhost:3010/api/search \
 ```
 
 **응답:**
+
 ```json
 {
   "keyword": "맥북",
@@ -271,20 +276,11 @@ kill $(lsof -ti:3010)
 
 ISC
 
-## 👤 개발자
-
-- **GitHub**: [@cozynye](https://github.com/cozynye)
-- **Email**: cozynye@gmail.com
-- **Repository**: [coolman](https://github.com/cozynye/coolman)
-
 ## 🙏 감사의 말
 
 이 프로젝트는 중고 물품을 찾는 사용자들의 편의를 위해 만들어졌습니다.
-개선 제안이나 버그 리포트는 언제든 환영합니다!
+개선 제안이나 버그 리포트는 GitHub Issues를 통해 제출해주세요.
 
 ---
 
-**마지막 업데이트**: 2025-12-16
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>
+**Last Updated**: 2025-12-16
