@@ -1,5 +1,5 @@
 const express = require('express');
-const Scraper = require('../src/scraper');
+const Scraper = require('./src/scraper');
 const axios = require('axios');
 
 const app = express();
