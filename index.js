@@ -1,4 +1,5 @@
 const express = require('express');
+const path = require('path');
 const Scraper = require('./src/scraper');
 const axios = require('axios');
 
@@ -16,6 +17,11 @@ async function initialize() {
     await scraper.initialize();
     console.log('서버 초기화 완료');
 }
+
+// 루트 경로 처리 (Vercel serverless 환경 대응)
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // 검색 API 엔드포인트
 app.post('/api/search', async (req, res) => {
