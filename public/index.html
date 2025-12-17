@@ -672,6 +672,14 @@
         const card = document.createElement("div");
         card.className = "product-card";
 
+        // 카드 전체 클릭 시 상품 상세 페이지로 이동
+        card.onclick = (e) => {
+          // 링크 클릭이 아닌 경우에만 동작 (링크는 자체적으로 처리)
+          if (e.target.tagName !== 'A') {
+            window.open(product.link, '_blank');
+          }
+        };
+
         const platformClass = product.platform === '번개장터' ? 'platform-bunjang' : 'platform-joongna';
 
         card.innerHTML = `
@@ -686,7 +694,7 @@
             />
           </div>
           <div class="product-content">
-            <h3><a href="${product.link}" target="_blank">${product.title}</a></h3>
+            <h3><a href="${product.link}" target="_blank" onclick="event.stopPropagation()">${product.title}</a></h3>
             <div class="product-price">${product.price}</div>
             <div class="product-meta">
               <div class="meta-item">
