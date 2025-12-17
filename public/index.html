@@ -199,6 +199,10 @@
         transform: translateY(-1px);
       }
 
+      .mobile-text {
+        display: none;
+      }
+
       /* Filter Buttons */
       .filter-container {
         display: none;
@@ -478,7 +482,7 @@
       /* Responsive */
       @media (max-width: 768px) {
         body {
-          padding: 65px 16px 0;
+          padding: 50px 16px 0;
           min-height: 100vh;
         }
 
@@ -492,6 +496,10 @@
 
         .search-icon-btn {
           padding: 10px 0;
+        }
+
+        .hero {
+          padding: 10px;
         }
 
         .hero p {
@@ -509,14 +517,24 @@
 
         #searchInput {
           min-width: 0;
-          font-size: 16px;
+          height: 40px;
+          font-size: 14px;
           padding: 0 16px;
         }
 
         #searchButton {
+          height: 40px;
           padding: 0 20px;
           font-size: 14px;
           white-space: nowrap;
+        }
+
+        .desktop-text {
+          display: none;
+        }
+
+        .mobile-text {
+          display: inline;
         }
 
         .filter-btn {
@@ -614,7 +632,7 @@
             id="searchInput"
             placeholder="찾으시는 상품을 입력하세요 (Enter로 검색)"
           />
-          <button id="searchButton">🔎 검색하기</button>
+          <button id="searchButton"><span class="desktop-text">🔎 검색하기</span><span class="mobile-text">🔎 검색</span></button>
         </div>
 
         <!-- Filter Buttons -->
