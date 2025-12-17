@@ -710,7 +710,24 @@ body {
   }
 
   .product-content {
-    padding: 14px;
+    padding: 12px;
+  }
+
+  /* 모바일 기본 모드 폰트 사이즈 조정 */
+  .product-card h3 {
+    font-size: 14px;
+    min-height: 40px;
+    margin-bottom: 6px;
+  }
+
+  .product-price {
+    font-size: 16px;
+    margin: 0 0 6px 0;
+  }
+
+  .meta-item {
+    font-size: 11px;
+    padding: 4px 0;
   }
 
   .results-header {
@@ -720,7 +737,7 @@ body {
 
   .floating-filters {
     right: 15px;
-    bottom: 40px;
+    bottom: 30px;
     gap: 8px;
   }
 
