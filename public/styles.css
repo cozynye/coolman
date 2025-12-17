@@ -200,7 +200,7 @@ body {
 .floating-view-options {
   position: fixed;
   right: 20px;
-  bottom: 20px;
+  bottom: 100px;
   z-index: 999;
   display: flex;
   gap: 8px;
@@ -660,7 +660,7 @@ body {
 
   .floating-view-options {
     right: 15px;
-    bottom: 15px;
+    bottom: 40px;
     padding: 8px;
   }
 
