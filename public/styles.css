@@ -44,6 +44,12 @@ body {
   font-weight: 700;
   color: white;
   margin: 0;
+  cursor: pointer;
+  transition: opacity 0.3s;
+}
+
+.header .header-title:hover {
+  opacity: 0.8;
 }
 
 .search-icon-btn {

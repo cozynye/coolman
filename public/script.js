@@ -202,6 +202,29 @@ searchInput.addEventListener("keypress", (e) => {
   if (e.key === "Enter") searchProducts();
 });
 
+// Header title click - 초기 화면으로
+const headerTitle = document.querySelector(".header-title");
+headerTitle.addEventListener("click", () => {
+  // URL에서 쿼리 파라미터 제거
+  const url = new URL(window.location);
+  url.searchParams.delete('q');
+  window.history.pushState({}, '', url);
+
+  // 검색어 및 결과 초기화
+  searchInput.value = "";
+  resultsSection.style.display = "none";
+  allProducts = [];
+  filteredProducts = [];
+  displayedCount = 0;
+  resultsContainer.innerHTML = "";
+
+  // 검색창으로 스크롤
+  searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
+  setTimeout(() => {
+    searchInput.focus();
+  }, 500);
+});
+
 // Header search icon click
 const headerSearchBtn = document.getElementById("headerSearchBtn");
 headerSearchBtn.addEventListener("click", () => {
