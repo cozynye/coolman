@@ -8,7 +8,7 @@ body {
   font-family: "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif;
   background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
   min-height: 100vh;
-  padding: 85px 15px 15px;
+  padding: 70px 15px 15px;
   background-attachment: fixed;
 }
 
@@ -89,12 +89,13 @@ body {
   position: sticky;
   top: 70px;
   z-index: 100;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(15px);
+  border-radius: 24px;
   padding: 20px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
   margin-bottom: 25px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .search-input-wrapper {
@@ -618,6 +619,7 @@ body {
   .search-box {
     top: 50px;
     padding: 10px;
+    border-radius: 8px;
     margin-bottom: 10px;
   }
 
