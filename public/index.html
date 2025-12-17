@@ -115,7 +115,7 @@
         background: rgba(255,255,255,0.08);
         backdrop-filter: blur(15px);
         border-radius: 24px;
-        padding: 35px;
+        padding: 20px;
         box-shadow: 0 25px 70px rgba(0,0,0,0.35);
         margin-bottom: 25px;
         border: 1px solid rgba(255,255,255,0.15);
@@ -124,7 +124,7 @@
       .search-input-wrapper {
         display: flex;
         gap: 12px;
-        margin-bottom: 22px;
+        margin-bottom: 0;
         flex-wrap: wrap;
         justify-content: center;
       }
@@ -260,7 +260,6 @@
       .product-card:hover {
         transform: translateY(-8px) scale(1.02);
         box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-        border-color: #2dd4bf;
       }
 
       .product-image-wrapper {
@@ -459,6 +458,10 @@
 
         .header-title {
           font-size: 16px;
+        }
+
+        .search-icon-btn {
+          padding: 10px 0;
         }
 
         .search-box {
@@ -754,12 +757,6 @@
                 <span>🕐</span>
                 <span>${product.update_time}</span>
               </div>
-              ${product.location ? `
-                <div class="meta-item">
-                  <span>📍</span>
-                  <span>${product.location}</span>
-                </div>
-              ` : ''}
             </div>
           </div>
         `;
