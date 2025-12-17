@@ -2,17 +2,35 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="description" content="중고나라와 번개장터를 한 번에 검색하세요. 중고 물품을 쉽고 빠르게 찾을 수 있는 통합 검색 서비스입니다." />
-    <meta name="keywords" content="중고나라, 번개장터, 중고거래, 중고물품, 통합검색, 중고검색" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta
+      name="description"
+      content="중고나라와 번개장터를 한 번에 검색하세요. 중고 물품을 쉽고 빠르게 찾을 수 있는 통합 검색 서비스입니다."
+    />
+    <meta
+      name="keywords"
+      content="중고나라, 번개장터, 중고거래, 중고물품, 통합검색, 중고검색"
+    />
     <meta name="author" content="중고 물품 통합 검색" />
-    <meta property="og:title" content="중고 물품 통합 검색 - 중고나라 + 번개장터" />
-    <meta property="og:description" content="중고나라와 번개장터를 한 번에 검색하는 통합 검색 서비스" />
+    <meta
+      property="og:title"
+      content="중고 물품 통합 검색 - 중고나라 + 번개장터"
+    />
+    <meta
+      property="og:description"
+      content="중고나라와 번개장터를 한 번에 검색하는 통합 검색 서비스"
+    />
     <meta property="og:type" content="website" />
     <title>중고 물품 통합 검색 - 중고나라 + 번개장터</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap"
+      rel="stylesheet"
+    />
     <style>
       * {
         margin: 0;
@@ -21,8 +39,14 @@
       }
 
       body {
-        font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
-        background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+        font-family: "Noto Sans KR", -apple-system, BlinkMacSystemFont,
+          sans-serif;
+        background: linear-gradient(
+          135deg,
+          #0f2027 0%,
+          #203a43 50%,
+          #2c5364 100%
+        );
         min-height: 100vh;
         padding: 85px 15px 15px;
         background-attachment: fixed;
@@ -95,7 +119,7 @@
         font-size: clamp(2rem, 5vw, 3.5rem);
         font-weight: 900;
         margin-bottom: 12px;
-        text-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        text-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         letter-spacing: -1.5px;
         background: linear-gradient(to right, #fff, #f0f0ff);
         -webkit-background-clip: text;
@@ -106,19 +130,19 @@
       .hero p {
         font-size: clamp(0.95rem, 2.5vw, 1.15rem);
         opacity: 0.95;
-        margin-bottom: 35px;
+        margin-bottom: 20px;
         font-weight: 300;
       }
 
       /* Search Box */
       .search-box {
-        background: rgba(255,255,255,0.08);
+        background: rgba(255, 255, 255, 0.08);
         backdrop-filter: blur(15px);
         border-radius: 24px;
         padding: 20px;
-        box-shadow: 0 25px 70px rgba(0,0,0,0.35);
+        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35);
         margin-bottom: 25px;
-        border: 1px solid rgba(255,255,255,0.15);
+        border: 1px solid rgba(255, 255, 255, 0.15);
       }
 
       .search-input-wrapper {
@@ -133,13 +157,14 @@
         flex: 1;
         min-width: 0;
         width: 100%;
-        padding: 17px 22px;
+        height: 50px;
+        padding: 0 22px;
         font-size: 16px;
         border: 2px solid #e8e8e8;
         border-radius: 14px;
         outline: none;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        font-family: 'Noto Sans KR', sans-serif;
+        font-family: "Noto Sans KR", sans-serif;
         background: white;
       }
 
@@ -150,7 +175,8 @@
       }
 
       #searchButton {
-        padding: 17px 36px;
+        height: 50px;
+        padding: 0 36px;
         font-size: 15.5px;
         font-weight: 600;
         background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
@@ -159,7 +185,7 @@
         border-radius: 14px;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        font-family: 'Noto Sans KR', sans-serif;
+        font-family: "Noto Sans KR", sans-serif;
         box-shadow: 0 6px 20px rgba(20, 184, 166, 0.35);
       }
 
@@ -187,7 +213,7 @@
         font-size: 13.5px;
         font-weight: 500;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        font-family: 'Noto Sans KR', sans-serif;
+        font-family: "Noto Sans KR", sans-serif;
         color: #666;
       }
 
@@ -208,13 +234,13 @@
 
       /* Results Section */
       .results-section {
-        background: rgba(255,255,255,0.08);
+        background: rgba(255, 255, 255, 0.08);
         backdrop-filter: blur(15px);
         border-radius: 24px;
         padding: 24px 18px;
-        box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
         min-height: 400px;
-        border: 1px solid rgba(255,255,255,0.15);
+        border: 1px solid rgba(255, 255, 255, 0.15);
       }
 
       .results-header {
@@ -223,7 +249,7 @@
         align-items: center;
         margin-bottom: 16px;
         padding-bottom: 14px;
-        border-bottom: 2px solid rgba(255,255,255,0.15);
+        border-bottom: 2px solid rgba(255, 255, 255, 0.15);
         flex-wrap: wrap;
         gap: 12px;
       }
@@ -231,7 +257,7 @@
       .results-count {
         font-size: 1.05rem;
         font-weight: 600;
-        color: rgba(255,255,255,0.95);
+        color: rgba(255, 255, 255, 0.95);
       }
 
       .active-filter {
@@ -259,7 +285,7 @@
 
       .product-card:hover {
         transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
       }
 
       .product-image-wrapper {
@@ -290,7 +316,7 @@
         font-size: 11.5px;
         font-weight: 700;
         backdrop-filter: blur(10px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         z-index: 1;
       }
 
@@ -386,7 +412,7 @@
       .spinner {
         width: 50px;
         height: 50px;
-        border: 4px solid rgba(255,255,255,0.3);
+        border: 4px solid rgba(255, 255, 255, 0.3);
         border-top: 4px solid white;
         border-radius: 50%;
         animation: spin 0.8s linear infinite;
@@ -394,8 +420,12 @@
       }
 
       @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
       }
 
       .loading-more {
@@ -418,7 +448,7 @@
       .end-message {
         text-align: center;
         padding: 45px 20px;
-        color: rgba(255,255,255,0.6);
+        color: rgba(255, 255, 255, 0.6);
         display: none;
         font-size: 14px;
         font-weight: 500;
@@ -431,7 +461,7 @@
       .empty-state {
         text-align: center;
         padding: 90px 20px;
-        color: rgba(255,255,255,0.6);
+        color: rgba(255, 255, 255, 0.6);
       }
 
       .empty-state-icon {
@@ -441,7 +471,7 @@
 
       .empty-state-text {
         font-size: 18px;
-        color: rgba(255,255,255,0.8);
+        color: rgba(255, 255, 255, 0.8);
         font-weight: 500;
       }
 
@@ -464,27 +494,29 @@
           padding: 10px 0;
         }
 
+        .hero p {
+          margin-bottom: 20px;
+        }
+
         .search-box {
           padding: 10px;
           border-radius: 8px;
         }
 
         .search-input-wrapper {
-          flex-direction: column;
-          gap: 10px;
+          gap: 8px;
         }
 
         #searchInput {
           min-width: 0;
-          width: 100%;
           font-size: 16px;
-          padding: 12px 16px;
+          padding: 0 16px;
         }
 
         #searchButton {
-          width: 100%;
-          padding: 12px 20px;
-          font-size: 15px;
+          padding: 0 20px;
+          font-size: 14px;
+          white-space: nowrap;
         }
 
         .filter-btn {
@@ -528,12 +560,24 @@
       }
 
       /* Stagger animation for cards */
-      .product-card:nth-child(1) { animation-delay: 0.05s; }
-      .product-card:nth-child(2) { animation-delay: 0.1s; }
-      .product-card:nth-child(3) { animation-delay: 0.15s; }
-      .product-card:nth-child(4) { animation-delay: 0.2s; }
-      .product-card:nth-child(5) { animation-delay: 0.25s; }
-      .product-card:nth-child(6) { animation-delay: 0.3s; }
+      .product-card:nth-child(1) {
+        animation-delay: 0.05s;
+      }
+      .product-card:nth-child(2) {
+        animation-delay: 0.1s;
+      }
+      .product-card:nth-child(3) {
+        animation-delay: 0.15s;
+      }
+      .product-card:nth-child(4) {
+        animation-delay: 0.2s;
+      }
+      .product-card:nth-child(5) {
+        animation-delay: 0.25s;
+      }
+      .product-card:nth-child(6) {
+        animation-delay: 0.3s;
+      }
     </style>
   </head>
   <body>
@@ -542,9 +586,15 @@
       <div class="header">
         <div class="header-content">
           <h2 class="header-title">중고마켓 통합검색</h2>
-          <button class="search-icon-btn" id="headerSearchBtn" aria-label="검색하러 가기">
+          <button
+            class="search-icon-btn"
+            id="headerSearchBtn"
+            aria-label="검색하러 가기"
+          >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+              <path
+                d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+              />
             </svg>
           </button>
         </div>
@@ -569,26 +619,22 @@
 
         <!-- Filter Buttons -->
         <div class="filter-container">
-          <button class="filter-btn active" data-filter="all">
-            전체
-          </button>
-          <button class="filter-btn" data-filter="번개장터">
-            번개장터
-          </button>
-          <button class="filter-btn" data-filter="중고나라">
-            중고나라
-          </button>
+          <button class="filter-btn active" data-filter="all">전체</button>
+          <button class="filter-btn" data-filter="번개장터">번개장터</button>
+          <button class="filter-btn" data-filter="중고나라">중고나라</button>
         </div>
       </div>
 
       <!-- Loading State -->
       <div class="loading" id="loading">
         <div class="spinner"></div>
-        <p style="color: white; font-size: 17px; font-weight: 500;">검색 중입니다...</p>
+        <p style="color: white; font-size: 17px; font-weight: 500">
+          검색 중입니다...
+        </p>
       </div>
 
       <!-- Results Section -->
-      <div class="results-section" id="resultsSection" style="display: none;">
+      <div class="results-section" id="resultsSection" style="display: none">
         <div class="results-header">
           <div class="results-count" id="resultsCount"></div>
           <div class="active-filter" id="activeFilter">
@@ -601,7 +647,7 @@
         <!-- Loading More -->
         <div class="loading-more" id="loadingMore">
           <div class="spinner"></div>
-          <p style="color: #666; margin-top: 10px;">더 불러오는 중...</p>
+          <p style="color: #666; margin-top: 10px">더 불러오는 중...</p>
         </div>
 
         <!-- End Message -->
@@ -703,7 +749,10 @@
         loadingMore.classList.add("show");
 
         setTimeout(() => {
-          const nextItems = filteredProducts.slice(displayedCount, displayedCount + itemsPerLoad);
+          const nextItems = filteredProducts.slice(
+            displayedCount,
+            displayedCount + itemsPerLoad
+          );
 
           nextItems.forEach((product, index) => {
             const card = createProductCard(product);
@@ -731,26 +780,38 @@
         // 카드 전체 클릭 시 상품 상세 페이지로 이동
         card.onclick = (e) => {
           // 링크 클릭이 아닌 경우에만 동작 (링크는 자체적으로 처리)
-          if (e.target.tagName !== 'A') {
-            window.open(product.link, '_blank');
+          if (e.target.tagName !== "A") {
+            window.open(product.link, "_blank");
           }
         };
 
-        const platformClass = product.platform === '번개장터' ? 'platform-bunjang' : 'platform-joongna';
+        const platformClass =
+          product.platform === "번개장터"
+            ? "platform-bunjang"
+            : "platform-joongna";
 
         card.innerHTML = `
           <div class="product-image-wrapper">
-            <span class="platform-badge ${platformClass}">${product.platform}</span>
+            <span class="platform-badge ${platformClass}">${
+          product.platform
+        }</span>
             <img
               class="product-image"
-              src="${product.image || 'https://via.placeholder.com/300x300?text=No+Image'}"
+              src="${
+                product.image ||
+                "https://via.placeholder.com/300x300?text=No+Image"
+              }"
               alt="${product.title}"
               loading="lazy"
               onerror="this.src='https://via.placeholder.com/300x300?text=No+Image'"
             />
           </div>
           <div class="product-content">
-            <h3><a href="${product.link}" target="_blank" onclick="event.stopPropagation()">${product.title}</a></h3>
+            <h3><a href="${
+              product.link
+            }" target="_blank" onclick="event.stopPropagation()">${
+          product.title
+        }</a></h3>
             <div class="product-price">${product.price}</div>
             <div class="product-meta">
               <div class="meta-item">
@@ -776,7 +837,11 @@
         const scrollPosition = window.innerHeight + window.scrollY;
         const threshold = document.documentElement.scrollHeight - 300;
 
-        if (scrollPosition >= threshold && !isLoading && displayedCount < filteredProducts.length) {
+        if (
+          scrollPosition >= threshold &&
+          !isLoading &&
+          displayedCount < filteredProducts.length
+        ) {
           loadMoreItems();
         }
       });
