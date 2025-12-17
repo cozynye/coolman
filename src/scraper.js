@@ -114,7 +114,13 @@ class Scraper {
                     title: item.name,
                     price: item.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "원",
                     link: `https://bunjang.co.kr/products/${item.pid}`,
-                    update_time: new Date(item.update_time * 1000).toLocaleString('ko-KR'),
+                    update_time: new Date(item.update_time * 1000).toLocaleString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }),
                     timestamp: item.update_time, // Unix timestamp for sorting
                     status: this.getStatusText(item.status),
                     image: item.product_image || item.image || 'https://via.placeholder.com/300x300?text=No+Image'
@@ -208,7 +214,13 @@ class Scraper {
                     title: item.title,
                     price: item.price ? item.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "원" : '가격문의',
                     link: `https://web.joongna.com/product/${item.seq}`,
-                    update_time: updateDate.toLocaleString('ko-KR'),
+                    update_time: updateDate.toLocaleString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    }),
                     timestamp: timestamp,
                     status: this.getJoongnaStatusText(item.state),
                     location: item.mainLocationName || '지역 미표시',
