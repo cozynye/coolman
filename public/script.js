@@ -12,10 +12,17 @@ let filteredProducts = [];
 let displayedCount = 0;
 const itemsPerLoad = 30;
 let isLoading = false;
+let currentPlatformFilter = 'all';
 
 function applyFilter() {
-  // 필터 제거 - 모든 결과 표시
-  filteredProducts = allProducts;
+  // 플랫폼 필터 적용
+  if (currentPlatformFilter === 'all') {
+    filteredProducts = allProducts;
+  } else {
+    filteredProducts = allProducts.filter(
+      product => product.platform === currentPlatformFilter
+    );
+  }
 
   displayedCount = 0;
   resultsContainer.innerHTML = "";
@@ -215,5 +222,21 @@ viewSizeBtns.forEach((btn) => {
     } else {
       resultsContainer.classList.remove("compact");
     }
+  });
+});
+
+// Platform filter toggle
+const platformFilterBtns = document.querySelectorAll(".platform-filter-btn");
+platformFilterBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const platform = btn.dataset.platform;
+
+    // Update button states
+    platformFilterBtns.forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    // Apply platform filter
+    currentPlatformFilter = platform;
+    applyFilter();
   });
 });

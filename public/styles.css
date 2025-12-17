@@ -196,26 +196,67 @@ body {
   transform: translateY(-2px);
 }
 
-/* Floating View Options */
-.floating-view-options {
+/* Floating Filters Container */
+.floating-filters {
   position: fixed;
   right: 20px;
   bottom: 100px;
   z-index: 999;
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Platform Filter */
+.floating-platform-filter {
+  display: flex;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px);
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.platform-filter-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 8px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.platform-filter-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.platform-filter-btn.active {
+  background: rgba(45, 212, 191, 0.3);
+  color: #2dd4bf;
+}
+
+/* Floating View Options */
+.floating-view-options {
+  display: flex;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(20px);
   padding: 10px;
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.floating-view-options:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 
 .view-size-btn {
@@ -671,9 +712,24 @@ body {
     align-items: flex-start;
   }
 
-  .floating-view-options {
+  .floating-filters {
     right: 15px;
     bottom: 40px;
+    gap: 8px;
+  }
+
+  .floating-platform-filter {
+    padding: 6px;
+    gap: 5px;
+  }
+
+  .platform-filter-btn {
+    min-width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .floating-view-options {
     padding: 8px;
   }
 
