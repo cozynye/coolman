@@ -199,3 +199,22 @@ headerSearchBtn.addEventListener("click", () => {
     searchInput.focus();
   }, 500);
 });
+
+// View size toggle
+const viewSizeBtns = document.querySelectorAll(".view-size-btn");
+viewSizeBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const size = btn.dataset.size;
+
+    // Update button states
+    viewSizeBtns.forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+
+    // Toggle grid size
+    if (size === "small") {
+      resultsContainer.classList.add("compact");
+    } else {
+      resultsContainer.classList.remove("compact");
+    }
+  });
+});

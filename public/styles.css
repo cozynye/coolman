@@ -196,6 +196,53 @@ body {
   transform: translateY(-2px);
 }
 
+/* View Options */
+.view-options {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 25px;
+}
+
+.view-size-btns {
+  display: flex;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(15px);
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.view-size-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: "Noto Sans KR", sans-serif;
+}
+
+.view-size-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.view-size-btn.active {
+  background: rgba(45, 212, 191, 0.2);
+  color: #2dd4bf;
+}
+
+.view-size-btn svg {
+  flex-shrink: 0;
+}
+
 /* Results Section */
 .results-section {
   background: rgba(255, 255, 255, 0.08);
@@ -233,6 +280,35 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
   padding: 5px 0;
+  transition: all 0.3s ease;
+}
+
+.results-grid.compact {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.results-grid.compact .product-card h3 {
+  font-size: 13px;
+  min-height: 36px;
+  margin-bottom: 6px;
+}
+
+.results-grid.compact .product-image-wrapper {
+  height: 140px;
+}
+
+.results-grid.compact .product-content {
+  padding: 12px;
+}
+
+.results-grid.compact .product-price {
+  font-size: 15px;
+  margin: 2px 0 6px 0;
+}
+
+.results-grid.compact .meta-item {
+  font-size: 11px;
 }
 
 .product-card {
@@ -544,6 +620,28 @@ body {
     gap: 15px;
   }
 
+  .results-grid.compact {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+  }
+
+  .results-grid.compact .product-image-wrapper {
+    height: 100px;
+  }
+
+  .results-grid.compact .product-content {
+    padding: 10px;
+  }
+
+  .results-grid.compact .product-card h3 {
+    font-size: 12px;
+    min-height: 32px;
+  }
+
+  .results-grid.compact .product-price {
+    font-size: 14px;
+  }
+
   .product-image-wrapper {
     height: 180px;
   }
@@ -555,5 +653,24 @@ body {
   .results-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .view-options {
+    margin-bottom: 15px;
+  }
+
+  .view-size-btns {
+    padding: 6px;
+  }
+
+  .view-size-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    gap: 4px;
+  }
+
+  .view-size-btn svg {
+    width: 16px;
+    height: 16px;
   }
 }
