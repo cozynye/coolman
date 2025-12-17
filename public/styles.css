@@ -216,17 +216,14 @@ body {
 .view-size-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
+  justify-content: center;
+  padding: 10px;
   background: transparent;
   border: none;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 13px;
-  font-weight: 500;
   color: rgba(255, 255, 255, 0.7);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-family: "Noto Sans KR", sans-serif;
 }
 
 .view-size-btn:hover {
@@ -582,6 +579,7 @@ body {
   .search-box {
     padding: 10px;
     border-radius: 8px;
+    margin-bottom: 10px;
   }
 
   .search-input-wrapper {
@@ -664,13 +662,15 @@ body {
   }
 
   .view-size-btn {
-    padding: 6px 12px;
-    font-size: 12px;
-    gap: 4px;
+    padding: 8px;
   }
 
   .view-size-btn svg {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
+  }
+
+  .results-section {
+    padding: 10px;
   }
 }
