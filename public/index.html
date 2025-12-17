@@ -22,7 +22,7 @@
 
       body {
         font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
         min-height: 100vh;
         padding: 15px;
       }
@@ -78,7 +78,8 @@
 
       #searchInput {
         flex: 1;
-        min-width: 280px;
+        min-width: 0;
+        width: 100%;
         padding: 17px 22px;
         font-size: 15.5px;
         border: 2px solid #e8e8e8;
@@ -90,8 +91,8 @@
       }
 
       #searchInput:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.08);
+        border-color: #00d4ff;
+        box-shadow: 0 0 0 4px rgba(0, 212, 255, 0.12);
         transform: translateY(-1px);
       }
 
@@ -99,19 +100,20 @@
         padding: 17px 36px;
         font-size: 15.5px;
         font-weight: 600;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
         color: white;
         border: none;
         border-radius: 14px;
         cursor: pointer;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         font-family: 'Noto Sans KR', sans-serif;
-        box-shadow: 0 6px 20px rgba(102, 126, 234, 0.45);
+        box-shadow: 0 6px 20px rgba(0, 153, 255, 0.4);
       }
 
       #searchButton:hover {
         transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        box-shadow: 0 8px 25px rgba(0, 212, 255, 0.6);
+        background: linear-gradient(135deg, #0ae3ff 0%, #00aaff 100%);
       }
 
       #searchButton:active {
@@ -140,16 +142,16 @@
       }
 
       .filter-btn:hover {
-        border-color: #667eea;
-        color: #667eea;
+        border-color: #00d4ff;
+        color: #00d4ff;
         transform: translateY(-2px);
       }
 
       .filter-btn.active {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
         color: white;
         border-color: transparent;
-        box-shadow: 0 6px 18px rgba(102, 126, 234, 0.35);
+        box-shadow: 0 6px 18px rgba(0, 153, 255, 0.4);
         transform: translateY(-2px);
       }
 
@@ -185,7 +187,7 @@
         align-items: center;
         gap: 7px;
         padding: 7px 15px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
         color: white;
         border-radius: 20px;
         font-size: 13px;
@@ -214,7 +216,7 @@
       .product-card:hover {
         transform: translateY(-8px) scale(1.02);
         box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-        border-color: #667eea;
+        border-color: #00d4ff;
       }
 
       .product-image-wrapper {
@@ -250,12 +252,12 @@
       }
 
       .platform-bunjang {
-        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+        background: linear-gradient(135deg, #ff6b9d 0%, #ff4757 100%);
         color: white;
       }
 
       .platform-joongna {
-        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        background: linear-gradient(135deg, #00d4ff 0%, #0099ff 100%);
         color: white;
       }
 
@@ -287,13 +289,13 @@
       }
 
       .product-card h3 a:hover {
-        color: #667eea;
+        color: #00d4ff;
       }
 
       .product-price {
         font-size: 20px;
         font-weight: 800;
-        background: linear-gradient(135deg, #e44d26 0%, #ff6b6b 100%);
+        background: linear-gradient(135deg, #ff6b9d 0%, #ff4757 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -367,7 +369,7 @@
         width: 40px;
         height: 40px;
         border: 3px solid #f3f3f3;
-        border-top: 3px solid #667eea;
+        border-top: 3px solid #00d4ff;
       }
 
       .end-message {
@@ -402,20 +404,30 @@
 
       /* Responsive */
       @media (max-width: 768px) {
+        body {
+          padding: 10px;
+        }
+
         .search-box {
-          padding: 25px 18px;
+          padding: 20px 15px;
         }
 
         .search-input-wrapper {
           flex-direction: column;
+          gap: 10px;
         }
 
         #searchInput {
-          min-width: 100%;
+          min-width: 0;
+          width: 100%;
+          font-size: 14px;
+          padding: 15px 18px;
         }
 
         #searchButton {
           width: 100%;
+          padding: 15px 24px;
+          font-size: 14px;
         }
 
         .results-grid {
@@ -476,7 +488,7 @@
           <input
             type="text"
             id="searchInput"
-            placeholder="찾으시는 상품을 입력하세요 (예: 맥북, 갤럭시, 아이폰)"
+            placeholder="찾으시는 상품을 입력하세요 (Enter로 검색)"
           />
           <button id="searchButton">🔎 검색하기</button>
         </div>
