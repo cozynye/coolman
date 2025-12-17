@@ -109,22 +109,23 @@ class Scraper {
                     
                     return isProduct && isOnSale && isRecent;
                 })
-                .map(item => ({
-                    platform: '번개장터',
-                    title: item.name,
-                    price: item.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "원",
-                    link: `https://bunjang.co.kr/products/${item.pid}`,
-                    update_time: new Date(item.update_time * 1000).toLocaleString('ko-KR', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }),
-                    timestamp: item.update_time, // Unix timestamp for sorting
-                    status: this.getStatusText(item.status),
-                    image: item.product_image || item.image || 'https://via.placeholder.com/300x300?text=No+Image'
-                }));
+                .map(item => {
+                    const date = new Date(item.update_time * 1000);
+                    const year = String(date.getFullYear()).slice(-2); // 2025 -> 25
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+
+                    return {
+                        platform: '번개장터',
+                        title: item.name,
+                        price: item.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "원",
+                        link: `https://bunjang.co.kr/products/${item.pid}`,
+                        update_time: `${year}-${month}-${day}`,
+                        timestamp: item.update_time, // Unix timestamp for sorting
+                        status: this.getStatusText(item.status),
+                        image: item.product_image || item.image || 'https://via.placeholder.com/300x300?text=No+Image'
+                    };
+                });
 
             console.log(`검색된 총 상품 수: ${response.list.length}`);
             console.log(`필터링된 상품 수: ${filteredResults.length}`);
@@ -209,18 +210,17 @@ class Scraper {
                 const updateDate = new Date(item.sortDate);
                 const timestamp = Math.floor(updateDate.getTime() / 1000);
 
+                // 날짜 포맷 변경: 25-12-17
+                const year = String(updateDate.getFullYear()).slice(-2);
+                const month = String(updateDate.getMonth() + 1).padStart(2, '0');
+                const day = String(updateDate.getDate()).padStart(2, '0');
+
                 return {
                     platform: '중고나라',
                     title: item.title,
                     price: item.price ? item.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "원" : '가격문의',
                     link: `https://web.joongna.com/product/${item.seq}`,
-                    update_time: updateDate.toLocaleString('ko-KR', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                    }),
+                    update_time: `${year}-${month}-${day}`,
                     timestamp: timestamp,
                     status: this.getJoongnaStatusText(item.state),
                     location: item.mainLocationName || '지역 미표시',

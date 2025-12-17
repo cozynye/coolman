@@ -155,7 +155,6 @@ function createProductCard(product) {
       <div class="product-price">${product.price}</div>
       <div class="product-meta">
         <div class="meta-item">
-          <span>🕐</span>
           <span>${product.update_time}</span>
         </div>
       </div>
