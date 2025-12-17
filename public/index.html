@@ -24,7 +24,7 @@
         font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
         background: linear-gradient(135deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
         min-height: 100vh;
-        padding: 15px;
+        padding: 85px 15px 15px;
         background-attachment: fixed;
       }
 
@@ -35,14 +35,18 @@
 
       /* Header */
       .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 15px 20px;
+        height: 70px;
+        padding: 0 20px;
         background: rgba(255, 255, 255, 0.1);
         backdrop-filter: blur(10px);
-        border-radius: 16px;
-        margin-bottom: 20px;
       }
 
       .header-title {
@@ -53,7 +57,7 @@
       }
 
       .search-icon-btn {
-        background: rgba(255, 255, 255, 0.2);
+        background: transparent;
         border: none;
         border-radius: 12px;
         padding: 10px 14px;
@@ -65,7 +69,6 @@
       }
 
       .search-icon-btn:hover {
-        background: rgba(255, 255, 255, 0.3);
         transform: scale(1.05);
       }
 
@@ -438,12 +441,17 @@
       /* Responsive */
       @media (max-width: 768px) {
         body {
-          padding: 10px;
+          padding: 65px 16px 0;
           min-height: 100vh;
         }
 
+        .header {
+          height: 50px;
+        }
+
         .search-box {
-          padding: 20px 15px;
+          padding: 10px;
+          border-radius: 8px;
         }
 
         .search-input-wrapper {
