@@ -225,15 +225,6 @@ headerTitle.addEventListener("click", () => {
   }, 500);
 });
 
-// Header search icon click
-const headerSearchBtn = document.getElementById("headerSearchBtn");
-headerSearchBtn.addEventListener("click", () => {
-  searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
-  setTimeout(() => {
-    searchInput.focus();
-  }, 500);
-});
-
 // View size toggle
 const viewSizeBtns = document.querySelectorAll(".view-size-btn");
 viewSizeBtns.forEach((btn) => {
