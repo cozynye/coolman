@@ -38,6 +38,11 @@ async function searchProducts() {
     return;
   }
 
+  // URL에 검색어 추가
+  const url = new URL(window.location);
+  url.searchParams.set('q', keyword);
+  window.history.pushState({}, '', url);
+
   // 모바일 키보드 숨기기
   searchInput.blur();
 
@@ -239,4 +244,15 @@ platformFilterBtns.forEach((btn) => {
     currentPlatformFilter = platform;
     applyFilter();
   });
+});
+
+// 페이지 로드 시 URL에서 검색어 확인 및 자동 검색
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const keyword = urlParams.get('q');
+
+  if (keyword) {
+    searchInput.value = keyword;
+    searchProducts();
+  }
 });
