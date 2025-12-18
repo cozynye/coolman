@@ -134,23 +134,22 @@ app.get('/api/test-raw', async (req, res) => {
     }
 });
 
-// 서버 종료 시 정리
-process.on('SIGINT', async () => {
-    await scraper.close();
-    process.exit();
-});
+// 초기화 상태 추적
+let isInitialized = false;
 
-// 서버 시작 - Vercel에서는 자동으로 초기화됨
-initialize().catch(error => {
-    console.error('초기화 중 에러:', error);
-});
-
-// 로컬 개발 환경에서만 listen
-if (process.env.NODE_ENV !== 'production') {
-    app.listen(port, () => {
-        console.log(`서버가 http://localhost:${port} 에서 실행 중입니다.`);
-    });
+// 초기화 함수 (lazy initialization)
+async function ensureInitialized() {
+    if (!isInitialized) {
+        await initialize();
+        isInitialized = true;
+    }
 }
 
-// Vercel을 위한 export
+// 모든 요청에서 초기화 확인
+app.use(async (req, res, next) => {
+    await ensureInitialized();
+    next();
+});
+
+// Vercel을 위한 export (serverless function)
 module.exports = app;
