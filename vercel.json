@@ -12,16 +12,16 @@
   ],
   "routes": [
     {
-      "src": "/styles.css",
-      "dest": "/public/styles.css"
+      "src": "/api/(.*)",
+      "dest": "/index.js"
     },
     {
-      "src": "/script.js",
-      "dest": "/public/script.js"
+      "src": "/(.*\\.(css|js|png|jpg|jpeg|gif|svg|ico|xml|txt|webp|woff|woff2|ttf|eot))",
+      "dest": "/public/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "index.js"
+      "dest": "/index.js"
     }
   ]
 }
