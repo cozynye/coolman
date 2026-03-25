@@ -166,67 +166,61 @@ class Scraper {
 
             console.log('중고나라 페이지 응답 상태:', response.status);
 
-            // Cheerio로 HTML 파싱
+            // Cheerio로 HTML 파싱 (SSR 렌더링된 상품 카드 직접 파싱)
             const $ = cheerio.load(response.data);
 
-            // __NEXT_DATA__ 스크립트 태그 찾기
-            const nextDataScript = $('#__NEXT_DATA__').html();
+            const results = [];
+            const seenSeqs = new Set();
 
-            if (!nextDataScript) {
-                console.log('중고나라: __NEXT_DATA__ 스크립트를 찾을 수 없음');
-                return [];
-            }
+            const now = new Date();
+            const timestamp = Math.floor(now.getTime() / 1000);
+            const year = String(now.getFullYear()).slice(-2);
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
 
-            // JSON 파싱
-            const nextData = JSON.parse(nextDataScript);
+            $('a[href^="/product/"]').each((i, elem) => {
+                const $el = $(elem);
+                const href = $el.attr('href');
 
-            // 경로: props.pageProps.dehydratedState.queries[2].state.data.data.items
-            const queries = nextData?.props?.pageProps?.dehydratedState?.queries;
+                // 비상품 링크 제외 (판매하기 폼 등)
+                if (!href || href.includes('/product/form')) return;
 
-            if (!queries || queries.length < 3) {
-                console.log('중고나라: queries 데이터 구조가 예상과 다름');
-                return [];
-            }
+                // 상품 ID 추출
+                const seq = href.replace('/product/', '').split('?')[0].split('/')[0];
+                if (!seq || isNaN(seq)) return;
 
-            // queries 배열에서 상품 데이터 찾기 (보통 index 2)
-            let items = null;
-            for (let i = 0; i < queries.length; i++) {
-                const queryData = queries[i]?.state?.data?.data?.items;
-                if (queryData && Array.isArray(queryData) && queryData.length > 0) {
-                    items = queryData;
-                    break;
-                }
-            }
+                // 중복 제거
+                if (seenSeqs.has(seq)) return;
+                seenSeqs.add(seq);
 
-            if (!items || items.length === 0) {
-                console.log('중고나라 검색 결과 없음');
-                return [];
-            }
+                // 제목: img alt 속성에서 " 이미지" 접미사 제거
+                const $img = $el.find('img');
+                let title = $img.attr('alt') || '';
+                title = title.replace(/ 이미지$/, '').trim();
+                if (!title) return;
 
-            console.log(`중고나라 검색 결과: ${items.length}개`);
+                // 이미지 URL
+                const image = $img.attr('src') || 'https://via.placeholder.com/300x300?text=No+Image';
 
-            const results = items.map(item => {
-                // sortDate를 timestamp로 변환
-                const updateDate = new Date(item.sortDate);
-                const timestamp = Math.floor(updateDate.getTime() / 1000);
+                // 가격: 텍스트에서 정규식으로 추출
+                const textContent = $el.text();
+                const priceMatch = textContent.match(/([\d,]+)원/);
+                const price = priceMatch ? priceMatch[1] + '원' : '가격문의';
 
-                // 날짜 포맷 변경: 25-12-17
-                const year = String(updateDate.getFullYear()).slice(-2);
-                const month = String(updateDate.getMonth() + 1).padStart(2, '0');
-                const day = String(updateDate.getDate()).padStart(2, '0');
-
-                return {
+                results.push({
                     platform: '중고나라',
-                    title: item.title,
-                    price: item.price ? item.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "원" : '가격문의',
-                    link: `https://web.joongna.com/product/${item.seq}`,
+                    title,
+                    price,
+                    link: `https://web.joongna.com/product/${seq}`,
                     update_time: `${year}-${month}-${day}`,
-                    timestamp: timestamp,
-                    status: this.getJoongnaStatusText(item.state),
-                    location: item.mainLocationName || '지역 미표시',
-                    image: item.url || 'https://via.placeholder.com/300x300?text=No+Image'
-                };
+                    timestamp,
+                    status: '판매중',
+                    location: '지역 미표시',
+                    image
+                });
             });
+
+            console.log(`중고나라 검색 결과: ${results.length}개`);
 
             return results;
         } catch (error) {
