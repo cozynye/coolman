@@ -2,7 +2,6 @@ const cheerio = require('cheerio');
 const axios = require('axios');
 const config = require('../config/config');
 
-// 로그 레벨 기반 로깅
 const LOG_LEVEL = config.LOG_LEVEL;
 const log = {
     debug: (...args) => LOG_LEVEL === 'debug' && console.log('[DEBUG]', ...args),
@@ -17,41 +16,30 @@ class Scraper {
         log.info('Scraper 초기화 완료');
     }
 
+    // === 번개장터: 멀티페이지 병렬 호출 ===
+
     async searchBunjang(keyword) {
         try {
-            const params = {
-                q: keyword,
-                order: 'score',
-                page: 0,
-                request_id: new Date().getTime(),
-                stat_device: 'w',
-                n: config.BUNJANG_RESULTS_LIMIT,
-                stat_category_required: 1,
-                req_ref: 'search',
-                version: 5
-            };
+            const pages = Array.from({ length: config.BUNJANG_PAGES }, (_, i) => i);
 
-            log.info('번개장터 API 요청:', keyword);
+            log.info(`번개장터 API 요청: "${keyword}" (${pages.length}페이지 병렬)`);
 
-            const { data: response } = await axios.get(config.BUNJANG_API_URL, {
-                params,
-                headers: {
-                    'User-Agent': config.USER_AGENT,
-                    'Accept': 'application/json, text/plain, */*',
-                    'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
-                    'Referer': `https://m.bunjang.co.kr/search/products?q=${encodeURIComponent(keyword)}`
-                },
-                timeout: config.SEARCH_TIMEOUT
+            const pageResults = await Promise.all(
+                pages.map(page => this._fetchBunjangPage(keyword, page))
+            );
+
+            // 합치기 + pid 중복 제거
+            const seenPids = new Set();
+            const allItems = pageResults.flat().filter(item => {
+                if (!item || seenPids.has(item.pid)) return false;
+                seenPids.add(item.pid);
+                return true;
             });
 
-            if (!response || !response.list) {
-                log.info('번개장터 응답에 데이터 없음');
-                return [];
-            }
-
+            // 24시간 필터링
             const oneDayAgo = Math.floor(Date.now() / 1000) - (config.FILTER_HOURS * 60 * 60);
 
-            const filteredResults = response.list
+            const filteredResults = allItems
                 .filter(item => {
                     const isProduct = item.type === 'PRODUCT';
                     const isOnSale = item.status === '0';
@@ -81,19 +69,80 @@ class Scraper {
                     };
                 });
 
-            log.info(`번개장터: 전체 ${response.list.length}개 → 필터링 ${filteredResults.length}개`);
+            log.info(`번개장터: 전체 ${allItems.length}개 → 필터링 ${filteredResults.length}개`);
             return filteredResults;
         } catch (error) {
-            log.error('번개장터 API 에러:', error.message);
+            log.error('번개장터 에러:', error.message);
             throw error;
         }
     }
 
+    async _fetchBunjangPage(keyword, page) {
+        try {
+            const { data: response } = await axios.get(config.BUNJANG_API_URL, {
+                params: {
+                    q: keyword,
+                    order: 'score',
+                    page,
+                    request_id: new Date().getTime() + page,
+                    stat_device: 'w',
+                    n: config.BUNJANG_RESULTS_LIMIT,
+                    stat_category_required: 1,
+                    req_ref: 'search',
+                    version: 5
+                },
+                headers: {
+                    'User-Agent': config.USER_AGENT,
+                    'Accept': 'application/json, text/plain, */*',
+                    'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+                    'Referer': `https://m.bunjang.co.kr/search/products?q=${encodeURIComponent(keyword)}`
+                },
+                timeout: config.SEARCH_TIMEOUT
+            });
+
+            if (!response || !response.list) return [];
+            log.debug(`번개장터 page ${page}: ${response.list.length}개`);
+            return response.list;
+        } catch (error) {
+            log.error(`번개장터 page ${page} 실패:`, error.message);
+            return [];
+        }
+    }
+
+    // === 중고나라: 멀티페이지 병렬 호출 ===
+
     async searchJoonggo(keyword) {
         try {
-            const pageUrl = `${config.JOONGNA_BASE_URL}/search/${encodeURIComponent(keyword)}?keywordSource=INPUT_KEYWORD`;
+            const pages = Array.from({ length: config.JOONGNA_PAGES }, (_, i) => i + 1);
 
-            log.info('중고나라 요청:', keyword);
+            log.info(`중고나라 요청: "${keyword}" (${pages.length}페이지 병렬)`);
+
+            const pageResults = await Promise.all(
+                pages.map(page => this._fetchJoongnaPage(keyword, page))
+            );
+
+            // 합치기 + seq 중복 제거
+            const seenSeqs = new Set();
+            const results = pageResults.flat().filter(item => {
+                if (seenSeqs.has(item._seq)) return false;
+                seenSeqs.add(item._seq);
+                return true;
+            });
+
+            // _seq 필드 제거 (내부용)
+            results.forEach(r => delete r._seq);
+
+            log.info(`중고나라: ${results.length}개`);
+            return results;
+        } catch (error) {
+            log.error('중고나라 에러:', error.message);
+            return [];
+        }
+    }
+
+    async _fetchJoongnaPage(keyword, page) {
+        try {
+            const pageUrl = `${config.JOONGNA_BASE_URL}/search/${encodeURIComponent(keyword)}?keywordSource=INPUT_KEYWORD&page=${page}`;
 
             const response = await axios.get(pageUrl, {
                 headers: {
@@ -107,7 +156,6 @@ class Scraper {
 
             const $ = cheerio.load(response.data);
             const results = [];
-            const seenSeqs = new Set();
 
             const now = new Date();
             const timestamp = Math.floor(now.getTime() / 1000);
@@ -124,21 +172,18 @@ class Scraper {
                 const seq = href.replace('/product/', '').split('?')[0].split('/')[0];
                 if (!seq || isNaN(seq)) return;
 
-                if (seenSeqs.has(seq)) return;
-                seenSeqs.add(seq);
-
                 const $img = $el.find('img');
                 let title = $img.attr('alt') || '';
                 title = title.replace(/ 이미지$/, '').trim();
                 if (!title) return;
 
                 const image = $img.attr('src') || '';
-
                 const textContent = $el.text();
                 const priceMatch = textContent.match(/([\d,]+)원/);
                 const price = priceMatch ? priceMatch[1] + '원' : '가격문의';
 
                 results.push({
+                    _seq: seq,
                     platform: '중고나라',
                     title,
                     price,
@@ -150,10 +195,10 @@ class Scraper {
                 });
             });
 
-            log.info(`중고나라: ${results.length}개`);
+            log.debug(`중고나라 page ${page}: ${results.length}개`);
             return results;
         } catch (error) {
-            log.error('중고나라 에러:', error.message);
+            log.error(`중고나라 page ${page} 실패:`, error.message);
             return [];
         }
     }

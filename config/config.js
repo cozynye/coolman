@@ -10,6 +10,8 @@ module.exports = {
     MAX_KEYWORD_LENGTH: 50,
     SEARCH_TIMEOUT: 15000,           // 15초
     BUNJANG_RESULTS_LIMIT: 100,
+    BUNJANG_PAGES: 3,            // 번개장터 0,1,2 페이지
+    JOONGNA_PAGES: 3,            // 중고나라 1,2,3 페이지
     FILTER_HOURS: 24,
 
     // API URL
