@@ -12,7 +12,6 @@ module.exports = {
     BUNJANG_RESULTS_LIMIT: 100,
     BUNJANG_PAGES: 3,            // 번개장터 0,1,2 페이지
     JOONGNA_PAGES: 3,            // 중고나라 1,2,3 페이지
-    FILTER_HOURS: 24,
 
     // API URL
     BUNJANG_API_URL: 'https://api.bunjang.co.kr/api/1/find_v2.json',

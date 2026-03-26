@@ -36,20 +36,16 @@ class Scraper {
                 return true;
             });
 
-            // 24시간 필터링
-            const oneDayAgo = Math.floor(Date.now() / 1000) - (config.FILTER_HOURS * 60 * 60);
-
             const filteredResults = allItems
                 .filter(item => {
                     const isProduct = item.type === 'PRODUCT';
                     const isOnSale = item.status === '0';
-                    const isRecent = item.update_time > oneDayAgo;
 
-                    if (!isProduct || !isOnSale || !isRecent) {
-                        log.debug('필터링:', item.name, { isProduct, isOnSale, isRecent });
+                    if (!isProduct || !isOnSale) {
+                        log.debug('필터링:', item.name, { isProduct, isOnSale });
                     }
 
-                    return isProduct && isOnSale && isRecent;
+                    return isProduct && isOnSale;
                 })
                 .map(item => {
                     const date = new Date(item.update_time * 1000);
