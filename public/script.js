@@ -14,10 +14,15 @@ let displayedCount = 0;
 const itemsPerLoad = 30;
 let isLoading = false;
 let currentPlatformFilter = 'all';
+let currentStatusFilter = 'all';
+let currentSort = 'latest';
 let priceMin = 0;
 let priceMax = Infinity;
 let currentAbortController = null;
+let currentKeyword = '';
 const MAX_KEYWORD_LENGTH = 50;
+const RECENT_SEARCHES_KEY = 'junggo_recent_searches';
+const MAX_RECENT_SEARCHES = 10;
 
 // === 유틸리티 함수 ===
 
@@ -46,6 +51,25 @@ function extractPrice(priceStr) {
   return isNaN(num) ? -1 : num;
 }
 
+// 가격 포맷팅
+function formatPrice(num) {
+  if (num < 0) return '-';
+  return num.toLocaleString('ko-KR') + '원';
+}
+
+// 검색어 하이라이팅 (escapeHtml 후 적용)
+function highlightKeyword(escapedText, keyword) {
+  if (!keyword || !escapedText) return escapedText;
+  const words = keyword.trim().split(/\s+/).filter(w => w.length > 0);
+  let result = escapedText;
+  words.forEach(word => {
+    const escapedWord = escapeHtml(word);
+    const regex = new RegExp(`(${escapedWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    result = result.replace(regex, '<span class="keyword-highlight">$1</span>');
+  });
+  return result;
+}
+
 // === 토스트 알림 ===
 function showToast(message, type = 'error', duration = 3000) {
   const toast = document.createElement('div');
@@ -59,12 +83,60 @@ function showToast(message, type = 'error', duration = 3000) {
   }, duration);
 }
 
+// === 최근 검색어 ===
+function getRecentSearches() {
+  try {
+    return JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY)) || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveRecentSearch(keyword) {
+  const searches = getRecentSearches().filter(s => s !== keyword);
+  searches.unshift(keyword);
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches.slice(0, MAX_RECENT_SEARCHES)));
+  renderRecentSearches();
+}
+
+function removeRecentSearch(keyword) {
+  const searches = getRecentSearches().filter(s => s !== keyword);
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(searches));
+  renderRecentSearches();
+}
+
+function clearRecentSearches() {
+  localStorage.removeItem(RECENT_SEARCHES_KEY);
+  renderRecentSearches();
+}
+
+function renderRecentSearches() {
+  const container = document.getElementById('recentSearches');
+  const chipsContainer = document.getElementById('recentChips');
+  const searches = getRecentSearches();
+
+  if (searches.length === 0) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  chipsContainer.innerHTML = searches.map(s => {
+    const safe = escapeHtml(s);
+    return `<span class="recent-chip" data-keyword="${safe}">
+      ${safe}
+      <button class="recent-chip-remove" data-remove="${safe}" aria-label="삭제">×</button>
+    </span>`;
+  }).join('');
+}
+
 // === 스켈레톤 로딩 ===
 function showSkeletons(count = 6) {
   resultsSection.style.display = "block";
   resultsContainer.innerHTML = '';
   resultsCount.innerHTML = '';
   endMessage.classList.remove("show");
+  document.getElementById('priceStats').style.display = 'none';
 
   const fragment = document.createDocumentFragment();
   for (let i = 0; i < count; i++) {
@@ -83,11 +155,47 @@ function showSkeletons(count = 6) {
   resultsContainer.appendChild(fragment);
 }
 
-// === 필터 ===
+// === 정렬 ===
+function sortProducts(products) {
+  const sorted = [...products];
+  switch (currentSort) {
+    case 'price-asc':
+      sorted.sort((a, b) => {
+        const pa = extractPrice(a.price);
+        const pb = extractPrice(b.price);
+        if (pa === -1 && pb === -1) return 0;
+        if (pa === -1) return 1;
+        if (pb === -1) return -1;
+        return pa - pb;
+      });
+      break;
+    case 'price-desc':
+      sorted.sort((a, b) => {
+        const pa = extractPrice(a.price);
+        const pb = extractPrice(b.price);
+        if (pa === -1 && pb === -1) return 0;
+        if (pa === -1) return 1;
+        if (pb === -1) return -1;
+        return pb - pa;
+      });
+      break;
+    case 'latest':
+    default:
+      sorted.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      break;
+  }
+  return sorted;
+}
+
+// === 필터 + 정렬 ===
 function applyFilter() {
   filteredProducts = allProducts.filter(product => {
     // 플랫폼 필터
     if (currentPlatformFilter !== 'all' && product.platform !== currentPlatformFilter) {
+      return false;
+    }
+    // 상태 필터
+    if (currentStatusFilter !== 'all' && product.status !== currentStatusFilter) {
       return false;
     }
     // 가격 필터
@@ -100,11 +208,37 @@ function applyFilter() {
     return true;
   });
 
+  // 정렬 적용
+  filteredProducts = sortProducts(filteredProducts);
+
   displayedCount = 0;
   resultsContainer.innerHTML = "";
   endMessage.classList.remove("show");
   updateResultsCount();
+  updatePriceStats();
   loadMoreItems();
+}
+
+// === 가격 통계 ===
+function updatePriceStats() {
+  const statsEl = document.getElementById('priceStats');
+  const prices = filteredProducts
+    .map(p => extractPrice(p.price))
+    .filter(p => p > 0);
+
+  if (prices.length === 0) {
+    statsEl.style.display = 'none';
+    return;
+  }
+
+  const minPrice = Math.min(...prices);
+  const maxPrice = Math.max(...prices);
+  const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
+
+  document.getElementById('statMinPrice').textContent = formatPrice(minPrice);
+  document.getElementById('statAvgPrice').textContent = formatPrice(avgPrice);
+  document.getElementById('statMaxPrice').textContent = formatPrice(maxPrice);
+  statsEl.style.display = 'flex';
 }
 
 // === 검색 ===
@@ -114,6 +248,11 @@ async function searchProducts() {
     showToast("검색어를 입력해주세요", "warning");
     return;
   }
+
+  currentKeyword = keyword;
+
+  // 최근 검색어 저장
+  saveRecentSearch(keyword);
 
   // URL에 검색어 추가
   const url = new URL(window.location);
@@ -230,7 +369,7 @@ function createProductCard(product) {
 
   const safeLink = sanitizeUrl(product.link);
   card.onclick = (e) => {
-    if (e.target.tagName !== "A") {
+    if (e.target.tagName !== "A" && !e.target.closest('.recent-chip-remove')) {
       window.open(safeLink, "_blank", "noopener");
     }
   };
@@ -241,18 +380,23 @@ function createProductCard(product) {
       : "platform-joongna";
 
   const safeTitle = escapeHtml(product.title);
+  const highlightedTitle = highlightKeyword(safeTitle, currentKeyword);
   const safePrice = escapeHtml(product.price);
   const safePlatform = escapeHtml(product.platform);
   const safeImage = sanitizeUrl(product.image) !== '#' ? product.image : '';
   const safeUpdateTime = escapeHtml(product.update_time);
 
+  const imageHtml = safeImage
+    ? `<img class="product-image" src="${safeImage}" alt="${safeTitle}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'product-image-placeholder\\'><iconify-icon icon=\\'solar:gallery-minimalistic-linear\\' width=\\'32\\'></iconify-icon><span>${safePlatform}</span></div>'" />`
+    : `<div class="product-image-placeholder"><iconify-icon icon="solar:gallery-minimalistic-linear" width="32"></iconify-icon><span>${safePlatform}</span></div>`;
+
   card.innerHTML = `
     <div class="product-image-wrapper">
       <span class="platform-badge ${platformClass}">${safePlatform}</span>
-      ${safeImage ? `<img class="product-image" src="${safeImage}" alt="${safeTitle}" loading="lazy" onerror="this.style.display='none'" />` : ''}
+      ${imageHtml}
     </div>
     <div class="product-content">
-      <h3><a href="${safeLink}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${safeTitle}</a></h3>
+      <h3><a href="${safeLink}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">${highlightedTitle}</a></h3>
       <div class="product-price">${safePrice}</div>
       <div class="product-meta">
         <div class="meta-item">
@@ -264,10 +408,12 @@ function createProductCard(product) {
   return card;
 }
 
-// === 결과 카운트 (2.2 버그 수정) ===
+// === 결과 카운트 (플랫폼별) ===
 function updateResultsCount() {
   if (filteredProducts.length > 0) {
-    resultsCount.innerHTML = `총 <strong>${filteredProducts.length}개</strong> 검색 결과`;
+    const bunjangCount = filteredProducts.filter(p => p.platform === '번개장터').length;
+    const joongnaCount = filteredProducts.filter(p => p.platform === '중고나라').length;
+    resultsCount.innerHTML = `총 <strong>${filteredProducts.length}개</strong> 검색 결과 <span style="color: rgba(255,255,255,0.4); font-size: 0.85em;">(번개장터 ${bunjangCount} / 중고나라 ${joongnaCount})</span>`;
   } else {
     resultsCount.innerHTML = '';
   }
@@ -303,13 +449,16 @@ headerTitle.addEventListener("click", () => {
   window.history.pushState({}, '', url);
 
   searchInput.value = "";
+  currentKeyword = '';
   resultsSection.style.display = "none";
   allProducts = [];
   filteredProducts = [];
   displayedCount = 0;
   resultsContainer.innerHTML = "";
   resultsCount.innerHTML = "";
+  document.getElementById('priceStats').style.display = 'none';
 
+  renderRecentSearches();
   searchInput.scrollIntoView({ behavior: "smooth", block: "center" });
   setTimeout(() => searchInput.focus(), 500);
 });
@@ -340,6 +489,40 @@ platformFilterBtns.forEach((btn) => {
   });
 });
 
+// === 정렬 필터 ===
+const sortToggleBtn = document.getElementById("sortToggleBtn");
+const sortDropdown = document.getElementById("sortDropdown");
+const sortOptionBtns = document.querySelectorAll(".sort-option-btn");
+
+sortToggleBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  sortDropdown.classList.toggle("show");
+  // 다른 드롭다운 닫기
+  document.getElementById("priceDropdown").classList.remove("show");
+});
+
+sortOptionBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    sortOptionBtns.forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentSort = btn.dataset.sort;
+    sortToggleBtn.classList.toggle("active", currentSort !== 'latest');
+    sortDropdown.classList.remove("show");
+    if (allProducts.length > 0) applyFilter();
+  });
+});
+
+// === 상태 필터 ===
+const statusFilterBtns = document.querySelectorAll(".status-filter-btn");
+statusFilterBtns.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    statusFilterBtns.forEach((b) => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentStatusFilter = btn.dataset.status;
+    if (allProducts.length > 0) applyFilter();
+  });
+});
+
 // === 가격 필터 ===
 const priceToggleBtn = document.getElementById("priceToggleBtn");
 const priceDropdown = document.getElementById("priceDropdown");
@@ -352,6 +535,8 @@ priceToggleBtn.addEventListener("click", (e) => {
   e.stopPropagation();
   priceDropdown.classList.toggle("show");
   priceToggleBtn.classList.toggle("active", priceDropdown.classList.contains("show"));
+  // 다른 드롭다운 닫기
+  sortDropdown.classList.remove("show");
 });
 
 // 드롭다운 외부 클릭 시 닫기
@@ -359,6 +544,9 @@ document.addEventListener("click", (e) => {
   if (!priceDropdown.contains(e.target) && e.target !== priceToggleBtn) {
     priceDropdown.classList.remove("show");
     priceToggleBtn.classList.remove("active");
+  }
+  if (!sortDropdown.contains(e.target) && e.target !== sortToggleBtn) {
+    sortDropdown.classList.remove("show");
   }
 });
 
@@ -397,6 +585,40 @@ priceApplyBtn.addEventListener("click", () => {
   priceDropdown.classList.remove("show");
 });
 
+// === 공유 버튼 ===
+document.getElementById("shareBtn").addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(window.location.href);
+    showToast("검색 결과 링크가 복사되었습니다", "success", 2000);
+  } catch {
+    // Fallback for older browsers
+    const input = document.createElement('input');
+    input.value = window.location.href;
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    showToast("검색 결과 링크가 복사되었습니다", "success", 2000);
+  }
+});
+
+// === 최근 검색어 이벤트 ===
+document.getElementById('recentChips').addEventListener('click', (e) => {
+  const removeBtn = e.target.closest('.recent-chip-remove');
+  if (removeBtn) {
+    e.stopPropagation();
+    removeRecentSearch(removeBtn.dataset.remove);
+    return;
+  }
+  const chip = e.target.closest('.recent-chip');
+  if (chip) {
+    searchInput.value = chip.dataset.keyword;
+    searchProducts();
+  }
+});
+
+document.getElementById('clearRecentBtn').addEventListener('click', clearRecentSearches);
+
 // === 브라우저 뒤로가기 대응 ===
 window.addEventListener('popstate', () => {
   const urlParams = new URLSearchParams(window.location.search);
@@ -406,17 +628,22 @@ window.addEventListener('popstate', () => {
     searchProducts();
   } else {
     searchInput.value = '';
+    currentKeyword = '';
     resultsSection.style.display = 'none';
     allProducts = [];
     filteredProducts = [];
     displayedCount = 0;
     resultsContainer.innerHTML = '';
     resultsCount.innerHTML = '';
+    document.getElementById('priceStats').style.display = 'none';
+    renderRecentSearches();
   }
 });
 
-// === 페이지 로드 시 URL에서 검색어 확인 ===
+// === 페이지 로드 시 초기화 ===
 window.addEventListener('DOMContentLoaded', () => {
+  renderRecentSearches();
+
   const urlParams = new URLSearchParams(window.location.search);
   const keyword = urlParams.get('q');
   if (keyword) {

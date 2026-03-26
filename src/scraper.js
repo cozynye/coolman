@@ -153,11 +153,7 @@ class Scraper {
             const $ = cheerio.load(response.data);
             const results = [];
 
-            const now = new Date();
-            const timestamp = Math.floor(now.getTime() / 1000);
-            const year = String(now.getFullYear()).slice(-2);
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
+            const baseTimestamp = Math.floor(Date.now() / 1000);
 
             $('a[href^="/product/"]').each((i, elem) => {
                 const $el = $(elem);
@@ -178,6 +174,14 @@ class Scraper {
                 const priceMatch = textContent.match(/([\d,]+)원/);
                 const price = priceMatch ? priceMatch[1] + '원' : '가격문의';
 
+                // 페이지 순서 + 인덱스로 상대 타임스탬프 부여
+                // 페이지 1의 첫 아이템이 가장 최신, 페이지가 높을수록 오래된 것
+                const itemTimestamp = baseTimestamp - ((page - 1) * 100 + i);
+                const itemDate = new Date(itemTimestamp * 1000);
+                const year = String(itemDate.getFullYear()).slice(-2);
+                const month = String(itemDate.getMonth() + 1).padStart(2, '0');
+                const day = String(itemDate.getDate()).padStart(2, '0');
+
                 results.push({
                     _seq: seq,
                     platform: '중고나라',
@@ -185,7 +189,7 @@ class Scraper {
                     price,
                     link: `${config.JOONGNA_BASE_URL}/product/${seq}`,
                     update_time: `${year}-${month}-${day}`,
-                    timestamp,
+                    timestamp: itemTimestamp,
                     status: '판매중',
                     image
                 });

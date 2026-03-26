@@ -125,6 +125,14 @@
       <section class="hero">
         <h1>중고모아</h1>
         <p>번개장터와 중고나라, 한 번에 비교하세요</p>
+        <!-- Recent Searches -->
+        <div class="recent-searches" id="recentSearches" style="display: none;">
+          <div class="recent-searches-header">
+            <span class="recent-searches-label">최근 검색</span>
+            <button class="recent-searches-clear" id="clearRecentBtn">지우기</button>
+          </div>
+          <div class="recent-searches-chips" id="recentChips"></div>
+        </div>
       </section>
 
       <!-- Search Box -->
@@ -159,8 +167,25 @@
       <div class="results-section" id="resultsSection" style="display: none">
         <div class="results-header">
           <div class="results-count" id="resultsCount"></div>
-          <div class="active-filter" id="activeFilter">
-            <span id="filterText">전체</span>
+          <div class="results-actions">
+            <button class="share-btn" id="shareBtn" aria-label="검색 결과 공유">
+              <iconify-icon icon="solar:share-linear" width="16" style="vertical-align: -2px;"></iconify-icon> 공유
+            </button>
+          </div>
+        </div>
+        <!-- Price Stats -->
+        <div class="price-stats" id="priceStats" style="display: none;">
+          <div class="price-stat-item">
+            <span class="price-stat-label">최저</span>
+            <span class="price-stat-value" id="statMinPrice">-</span>
+          </div>
+          <div class="price-stat-item">
+            <span class="price-stat-label">평균</span>
+            <span class="price-stat-value" id="statAvgPrice">-</span>
+          </div>
+          <div class="price-stat-item">
+            <span class="price-stat-label">최고</span>
+            <span class="price-stat-value" id="statMaxPrice">-</span>
           </div>
         </div>
         <div class="results-grid" id="results"></div>
@@ -180,6 +205,18 @@
 
     <!-- Floating Filters -->
     <div class="floating-filters">
+      <!-- Sort Filter -->
+      <div class="floating-sort-filter">
+        <button class="sort-toggle-btn" id="sortToggleBtn" aria-label="정렬">
+          <iconify-icon icon="solar:sort-vertical-linear" width="18"></iconify-icon>
+        </button>
+        <div class="sort-dropdown" id="sortDropdown">
+          <button class="sort-option-btn active" data-sort="latest">최신순</button>
+          <button class="sort-option-btn" data-sort="price-asc">낮은가격순</button>
+          <button class="sort-option-btn" data-sort="price-desc">높은가격순</button>
+        </div>
+      </div>
+
       <!-- Price Filter -->
       <div class="floating-price-filter">
         <button class="price-toggle-btn" id="priceToggleBtn" aria-label="가격 필터">₩</button>
