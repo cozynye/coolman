@@ -186,7 +186,7 @@ function loadMoreItems() {
   if (filteredProducts.length === 0) {
     resultsContainer.innerHTML = `
       <div class="empty-state" style="grid-column: 1 / -1;">
-        <div class="empty-state-icon">📭</div>
+        <div class="empty-state-icon"><iconify-icon icon="solar:box-minimalistic-linear" width="48"></iconify-icon></div>
         <div class="empty-state-text">검색 결과가 없습니다</div>
       </div>
     `;
@@ -267,9 +267,7 @@ function createProductCard(product) {
 // === 결과 카운트 (2.2 버그 수정) ===
 function updateResultsCount() {
   if (filteredProducts.length > 0) {
-    resultsCount.innerHTML = `
-      총 <strong>${filteredProducts.length}개</strong> <span style="color: #999; font-weight: 400;">검색 결과</span>
-    `;
+    resultsCount.innerHTML = `총 <strong>${filteredProducts.length}개</strong> 검색 결과`;
   } else {
     resultsCount.innerHTML = '';
   }

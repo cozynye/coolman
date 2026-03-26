@@ -108,13 +108,8 @@
     }
     </script>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap"
-      rel="stylesheet"
-    />
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.min.css" />
+    <script src="https://code.iconify.design/iconify-icon/2.3.0/iconify-icon.min.js"></script>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -128,8 +123,8 @@
 
       <!-- Hero Section -->
       <section class="hero">
-        <h1>🔍 중고모아</h1>
-        <p>번개장터 × 중고나라를 한 번에 비교하세요</p>
+        <h1>중고모아</h1>
+        <p>번개장터와 중고나라, 한 번에 비교하세요</p>
       </section>
 
       <!-- Search Box -->
@@ -141,8 +136,8 @@
             placeholder="찾으시는 상품을 입력하세요 (Enter로 검색)"
           />
           <button id="searchButton">
-            <span class="desktop-text">🔎 검색하기</span
-            ><span class="mobile-text">🔎 검색</span>
+            <span class="desktop-text"><iconify-icon icon="solar:magnifer-linear" width="18" style="vertical-align: -3px;"></iconify-icon> 검색하기</span
+            ><span class="mobile-text"><iconify-icon icon="solar:magnifer-linear" width="16" style="vertical-align: -3px;"></iconify-icon> 검색</span>
           </button>
         </div>
 
@@ -157,9 +152,7 @@
       <!-- Loading State -->
       <div class="loading" id="loading">
         <div class="spinner"></div>
-        <p style="color: white; font-size: 17px; font-weight: 500">
-          검색 중입니다...
-        </p>
+        <p class="loading-text">검색 중입니다...</p>
       </div>
 
       <!-- Results Section -->
@@ -167,7 +160,6 @@
         <div class="results-header">
           <div class="results-count" id="resultsCount"></div>
           <div class="active-filter" id="activeFilter">
-            <span>🏷️</span>
             <span id="filterText">전체</span>
           </div>
         </div>
@@ -176,12 +168,12 @@
         <!-- Loading More -->
         <div class="loading-more" id="loadingMore">
           <div class="spinner"></div>
-          <p style="color: #666; margin-top: 10px">더 불러오는 중...</p>
+          <p class="loading-more-text">더 불러오는 중...</p>
         </div>
 
         <!-- End Message -->
         <div class="end-message" id="endMessage">
-          ✓ 모든 결과를 불러왔습니다
+          모든 결과를 불러왔습니다
         </div>
       </div>
     </div>
@@ -194,10 +186,13 @@
         <div class="price-dropdown" id="priceDropdown">
           <div class="price-presets">
             <button class="price-preset-btn active" data-min="0" data-max="0">전체</button>
-            <button class="price-preset-btn" data-min="0" data-max="10000">~1만</button>
-            <button class="price-preset-btn" data-min="10000" data-max="50000">1~5만</button>
-            <button class="price-preset-btn" data-min="50000" data-max="100000">5~10만</button>
-            <button class="price-preset-btn" data-min="100000" data-max="0">10만~</button>
+            <button class="price-preset-btn" data-min="0" data-max="100000">~10만</button>
+            <button class="price-preset-btn" data-min="0" data-max="1000000">~100만</button>
+            <button class="price-preset-btn" data-min="0" data-max="3000000">~300만</button>
+            <button class="price-preset-btn" data-min="0" data-max="5000000">~500만</button>
+            <button class="price-preset-btn" data-min="0" data-max="8000000">~800만</button>
+            <button class="price-preset-btn" data-min="0" data-max="10000000">~1000만</button>
+            <button class="price-preset-btn" data-min="10000000" data-max="0">1000만~</button>
           </div>
           <div class="price-custom">
             <input type="number" id="priceMin" placeholder="최소" min="0" />
@@ -218,10 +213,10 @@
       <!-- View Size -->
       <div class="floating-view-options">
         <button class="view-size-btn active" data-size="large" aria-label="크게 보기">
-          <i data-lucide="layout-grid" width="20" height="20"></i>
+          <iconify-icon icon="solar:widget-2-linear" width="20" height="20"></iconify-icon>
         </button>
         <button class="view-size-btn" data-size="small" aria-label="작게 보기">
-          <i data-lucide="grid-3x3" width="20" height="20"></i>
+          <iconify-icon icon="solar:widget-5-linear" width="20" height="20"></iconify-icon>
         </button>
       </div>
     </div>
@@ -230,8 +225,5 @@
     <div id="toastContainer" class="toast-container"></div>
 
     <script src="script.js"></script>
-    <script>
-      lucide.createIcons();
-    </script>
   </body>
 </html>
