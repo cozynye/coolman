@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+      content="width=device-width, initial-scale=1.0"
     />
 
     <!-- Primary Meta Tags -->
@@ -188,6 +188,26 @@
 
     <!-- Floating Filters -->
     <div class="floating-filters">
+      <!-- Price Filter -->
+      <div class="floating-price-filter">
+        <button class="price-toggle-btn" id="priceToggleBtn" aria-label="가격 필터">₩</button>
+        <div class="price-dropdown" id="priceDropdown">
+          <div class="price-presets">
+            <button class="price-preset-btn active" data-min="0" data-max="0">전체</button>
+            <button class="price-preset-btn" data-min="0" data-max="10000">~1만</button>
+            <button class="price-preset-btn" data-min="10000" data-max="50000">1~5만</button>
+            <button class="price-preset-btn" data-min="50000" data-max="100000">5~10만</button>
+            <button class="price-preset-btn" data-min="100000" data-max="0">10만~</button>
+          </div>
+          <div class="price-custom">
+            <input type="number" id="priceMin" placeholder="최소" min="0" />
+            <span class="price-separator">~</span>
+            <input type="number" id="priceMax" placeholder="최대" min="0" />
+            <button class="price-apply-btn" id="priceApplyBtn">적용</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Platform Filter -->
       <div class="floating-platform-filter">
         <button class="platform-filter-btn active" data-platform="all">All</button>
@@ -205,6 +225,9 @@
         </button>
       </div>
     </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
 
     <script src="script.js"></script>
     <script>

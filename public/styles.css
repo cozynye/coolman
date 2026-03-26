@@ -399,29 +399,6 @@ body {
   color: #2dd4bf;
 }
 
-.product-card:nth-child(1) {
-  animation-delay: 0.05s;
-}
-
-.product-card:nth-child(2) {
-  animation-delay: 0.1s;
-}
-
-.product-card:nth-child(3) {
-  animation-delay: 0.15s;
-}
-
-.product-card:nth-child(4) {
-  animation-delay: 0.2s;
-}
-
-.product-card:nth-child(5) {
-  animation-delay: 0.25s;
-}
-
-.product-card:nth-child(6) {
-  animation-delay: 0.3s;
-}
 
 .product-image-wrapper {
   width: 100%;
@@ -593,6 +570,240 @@ body {
   }
 }
 
+/* Skeleton Loading */
+.skeleton {
+  pointer-events: none;
+}
+
+.skeleton .skeleton-image {
+  width: 100%;
+  height: 240px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton .skeleton-content {
+  padding: 18px;
+}
+
+.skeleton .skeleton-line {
+  height: 14px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #e0e0e0 25%, #f0f0f0 50%, #e0e0e0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  margin-bottom: 10px;
+}
+
+.skeleton .skeleton-title {
+  width: 80%;
+  height: 16px;
+}
+
+.skeleton .skeleton-price {
+  width: 45%;
+  height: 20px;
+}
+
+.skeleton .skeleton-meta {
+  width: 35%;
+  height: 12px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Price Filter */
+.floating-price-filter {
+  position: relative;
+}
+
+.price-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.price-toggle-btn:hover,
+.price-toggle-btn.active {
+  background: rgba(45, 212, 191, 0.3);
+  color: #2dd4bf;
+  border-color: rgba(45, 212, 191, 0.4);
+}
+
+.price-dropdown {
+  display: none;
+  position: absolute;
+  right: 0;
+  bottom: 52px;
+  background: rgba(15, 32, 39, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  padding: 14px;
+  min-width: 240px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.price-dropdown.show {
+  display: block;
+}
+
+.price-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.price-preset-btn {
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: "Noto Sans KR", sans-serif;
+}
+
+.price-preset-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+}
+
+.price-preset-btn.active {
+  background: rgba(45, 212, 191, 0.3);
+  color: #2dd4bf;
+  border-color: rgba(45, 212, 191, 0.4);
+}
+
+.price-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.price-custom input {
+  width: 80px;
+  height: 32px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: white;
+  font-size: 13px;
+  font-family: "Noto Sans KR", sans-serif;
+  outline: none;
+}
+
+.price-custom input:focus {
+  border-color: #2dd4bf;
+}
+
+.price-custom input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.price-separator {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 14px;
+}
+
+.price-apply-btn {
+  height: 32px;
+  padding: 0 14px;
+  background: linear-gradient(135deg, #2dd4bf 0%, #14b8a6 100%);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: "Noto Sans KR", sans-serif;
+  white-space: nowrap;
+}
+
+.price-apply-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(45, 212, 191, 0.3);
+}
+
+/* Toast Notifications */
+.toast-container {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+}
+
+.toast {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: "Noto Sans KR", sans-serif;
+  color: white;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: toastSlideIn 0.3s ease-out;
+  max-width: 90vw;
+  text-align: center;
+}
+
+.toast.toast-error {
+  background: rgba(239, 68, 68, 0.9);
+}
+
+.toast.toast-success {
+  background: rgba(34, 197, 94, 0.9);
+}
+
+.toast.toast-info {
+  background: rgba(59, 130, 246, 0.9);
+}
+
+.toast.toast-warning {
+  background: rgba(245, 158, 11, 0.9);
+}
+
+.toast.toast-hide {
+  animation: toastSlideOut 0.3s ease-in forwards;
+}
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toastSlideOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(20px); }
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   body {
@@ -602,6 +813,8 @@ body {
 
   .header {
     height: 50px;
+    backdrop-filter: none;
+    background: rgba(0, 0, 0, 0.85);
   }
 
   .header .header-title {
@@ -621,6 +834,8 @@ body {
     padding: 10px;
     border-radius: 8px;
     margin-bottom: 10px;
+    backdrop-filter: none;
+    background: rgba(15, 32, 39, 0.95);
   }
 
   .search-input-wrapper {
@@ -727,6 +942,8 @@ body {
   .floating-platform-filter {
     padding: 6px;
     gap: 5px;
+    backdrop-filter: none;
+    background: rgba(0, 0, 0, 0.85);
   }
 
   .platform-filter-btn {
@@ -737,6 +954,8 @@ body {
 
   .floating-view-options {
     padding: 8px;
+    backdrop-filter: none;
+    background: rgba(0, 0, 0, 0.85);
   }
 
   .view-size-btn {
@@ -750,5 +969,22 @@ body {
 
   .results-section {
     padding: 10px;
+  }
+
+  .skeleton .skeleton-image {
+    height: 180px;
+  }
+
+  .price-dropdown {
+    min-width: 220px;
+    right: -10px;
+  }
+
+  .price-custom input {
+    width: 65px;
+  }
+
+  .toast-container {
+    bottom: 20px;
   }
 }
