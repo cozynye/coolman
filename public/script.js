@@ -408,12 +408,10 @@ function createProductCard(product) {
   return card;
 }
 
-// === 결과 카운트 (플랫폼별) ===
+// === 결과 카운트 ===
 function updateResultsCount() {
   if (filteredProducts.length > 0) {
-    const bunjangCount = filteredProducts.filter(p => p.platform === '번개장터').length;
-    const joongnaCount = filteredProducts.filter(p => p.platform === '중고나라').length;
-    resultsCount.innerHTML = `총 <strong>${filteredProducts.length}개</strong> 검색 결과 <span style="color: rgba(255,255,255,0.4); font-size: 0.85em;">(번개장터 ${bunjangCount} / 중고나라 ${joongnaCount})</span>`;
+    resultsCount.innerHTML = `총 <strong>${filteredProducts.length}개</strong> 검색 결과`;
   } else {
     resultsCount.innerHTML = '';
   }

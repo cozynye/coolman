@@ -181,6 +181,12 @@ body::after {
   gap: 10px;
 }
 
+.floating-sort-price-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .floating-platform-filter {
   display: flex;
   gap: 4px;
@@ -1133,7 +1139,7 @@ body::after {
 
   #searchInput {
     height: 44px;
-    font-size: 14px;
+    font-size: 16px;
     padding: 0 14px;
     border-radius: 12px;
   }
@@ -1227,6 +1233,11 @@ body::after {
     gap: 8px;
   }
 
+  .floating-sort-price-row {
+    flex-direction: row;
+    gap: 6px;
+  }
+
   .floating-platform-filter {
     padding: 5px;
     gap: 3px;
@@ -1261,6 +1272,7 @@ body::after {
 
   .price-custom input {
     width: 70px;
+    font-size: 16px;
   }
 
   .toast-container {
