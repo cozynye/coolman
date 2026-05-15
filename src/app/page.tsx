@@ -5,8 +5,9 @@ import { useSearchParams } from 'next/navigation';
 import SearchBar, { saveRecentSearch } from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import SkeletonCard from '@/components/SkeletonCard';
+import SearchProgressBanner from '@/components/SearchProgressBanner';
 import FilterSidebar from '@/components/FilterSidebar';
-import type { Product, SearchResponse, FilterState, PriceStats } from '@/lib/types';
+import type { Product, FilterState, PriceStats } from '@/lib/types';
 
 // ─── 필터·정렬 로직 ────────────────────────────────────────────────
 function applyFilter(products: Product[], filter: FilterState): Product[] {
@@ -50,7 +51,7 @@ function PlatformStatusBar({
   bunjangCount,
   joongnaCount,
 }: {
-  meta: SearchResponse['meta'];
+  meta: { bunjang: 'success' | 'failed'; joonggo: 'success' | 'failed' };
   bunjangCount: number;
   joongnaCount: number;
 }) {
@@ -228,7 +229,12 @@ function ResultGrid({ products, size }: { products: Product[]; size: 'large' | '
 function HomePageInner() {
   const searchParams = useSearchParams();
 
-  const [searchResult, setSearchResult] = useState<SearchResponse | null>(null);
+  const [bunjangProducts, setBunjangProducts] = useState<Product[]>([]);
+  const [joongnaProducts, setJoongnaProducts] = useState<Product[]>([]);
+  const [bunjangDone, setBunjangDone] = useState(false);
+  const [joongnaDone, setJoongnaDone] = useState(false);
+  const [bunjangFailed, setBunjangFailed] = useState(false);
+  const [joongnaFailed, setJoongnaFailed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentKeyword, setCurrentKeyword] = useState('');
   const [cardSize, setCardSize] = useState<'large' | 'small'>('large');
@@ -244,22 +250,33 @@ function HomePageInner() {
     setIsLoading(true);
     setCurrentKeyword(keyword);
     setFilter({ platform: 'all', sort: 'latest', priceMin: 0, priceMax: 0 });
+    setBunjangProducts([]);
+    setJoongnaProducts([]);
+    setBunjangDone(false);
+    setJoongnaDone(false);
+    setBunjangFailed(false);
+    setJoongnaFailed(false);
 
-    try {
-      const res = await fetch('/api/search', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keyword }),
-      });
-      if (!res.ok) throw new Error('검색 실패');
-      const data: SearchResponse = await res.json();
-      saveRecentSearch(keyword);
-      setSearchResult(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsLoading(false);
-    }
+    const body = JSON.stringify({ keyword });
+    const headers = { 'Content-Type': 'application/json' };
+
+    const fetchBunjang = fetch('/api/search/bunjang', { method: 'POST', headers, body })
+      .then((r) => r.json())
+      .then((data) => setBunjangProducts(data.results ?? []))
+      .catch(() => setBunjangFailed(true))
+      .finally(() => setBunjangDone(true));
+
+    const fetchJoongna = fetch('/api/search/joongna', { method: 'POST', headers, body })
+      .then((r) => r.json())
+      .then((data) => setJoongnaProducts(data.results ?? []))
+      .catch(() => setJoongnaFailed(true))
+      .finally(() => setJoongnaDone(true));
+
+    await Promise.all([fetchBunjang, fetchJoongna]);
+    saveRecentSearch(keyword);
+    // 배너에 "검색 완료!" 잠깐 보여준 뒤 결과만 표시
+    await new Promise((r) => setTimeout(r, 900));
+    setIsLoading(false);
   }, []);
 
   // URL → 검색: ?q= 파라미터로 바로 검색
@@ -280,12 +297,15 @@ function HomePageInner() {
     setFilter((prev) => ({ ...prev, ...partial }));
   }, []);
 
-  const allProducts = searchResult?.results ?? [];
+  const allProducts = useMemo(
+    () => [...bunjangProducts, ...joongnaProducts],
+    [bunjangProducts, joongnaProducts]
+  );
   const filtered = useMemo(() => applyFilter(allProducts, filter), [allProducts, filter]);
   const stats = useMemo(() => calcStats(filtered), [filtered]);
 
-  const bunjangCount = allProducts.filter((p) => p.platform === '번개장터').length;
-  const joongnaCount = allProducts.filter((p) => p.platform === '중고나라').length;
+  const bunjangCount = bunjangProducts.length;
+  const joongnaCount = joongnaProducts.length;
 
   // 검색 전 홈 화면
   if (!currentKeyword && !isLoading) {
@@ -299,7 +319,7 @@ function HomePageInner() {
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-4">
           <button
-            onClick={() => { setSearchResult(null); setCurrentKeyword(''); window.history.pushState({}, '', '/'); }}
+            onClick={() => { setBunjangProducts([]); setJoongnaProducts([]); setCurrentKeyword(''); window.history.pushState({}, '', '/'); }}
             className="text-gray-900 font-bold text-sm sm:text-lg shrink-0 hover:text-teal-600 transition-colors"
           >
             중고모아
@@ -331,9 +351,12 @@ function HomePageInner() {
                 </span>
               )}
             </h2>
-            {searchResult && !isLoading && (
+            {!isLoading && (
               <PlatformStatusBar
-                meta={searchResult.meta}
+                meta={{
+                  bunjang: bunjangFailed ? 'failed' : 'success',
+                  joonggo: joongnaFailed ? 'failed' : 'success',
+                }}
                 bunjangCount={bunjangCount}
                 joongnaCount={joongnaCount}
               />
@@ -395,8 +418,18 @@ function HomePageInner() {
           </div>
         </div>
 
+        {/* 진행률 배너 */}
+        {isLoading && (
+          <SearchProgressBanner
+            bunjangDone={bunjangDone}
+            joongnaDone={joongnaDone}
+            bunjangCount={bunjangCount}
+            joongnaCount={joongnaCount}
+          />
+        )}
+
         {/* 가격 통계 */}
-        {stats && (
+        {stats && !isLoading && (
           <div className="flex gap-4 mb-5 p-3 bg-white border border-gray-100 rounded-xl text-center">
             {[
               { label: '최저', value: fmt(stats.min) },
@@ -410,6 +443,7 @@ function HomePageInner() {
             ))}
           </div>
         )}
+
 
         {/* 사이드바 + 그리드 레이아웃 */}
         <div className="flex gap-8">
@@ -426,17 +460,19 @@ function HomePageInner() {
 
           {/* 결과 그리드 */}
           <div className="flex-1 min-w-0">
-            {isLoading ? (
+            {isLoading && allProducts.length === 0 ? (
+              /* 아직 아무 결과도 없으면 스켈레톤 */
               <div className={`grid ${cardSize === 'small' ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'} gap-3`}>
                 {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
-            ) : filtered.length === 0 ? (
+            ) : !isLoading && filtered.length === 0 ? (
               <div className="text-center py-16 text-gray-400">
                 <p className="text-5xl mb-4">🔍</p>
                 <p className="font-medium">검색 결과가 없습니다</p>
                 <p className="text-sm mt-1">필터를 변경하거나 다른 키워드로 검색해보세요</p>
               </div>
             ) : (
+              /* 하나라도 결과가 있으면 즉시 표시 (로딩 중에도) */
               <ResultGrid products={filtered} size={cardSize} />
             )}
           </div>
