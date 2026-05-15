@@ -12,6 +12,7 @@
 body {
   font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; /* 가로 오버플로우 전역 방지 */
 }
 
 @keyframes fadeIn {

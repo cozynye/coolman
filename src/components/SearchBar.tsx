@@ -106,7 +106,7 @@ export default function SearchBar({ onSearch, isLoading, compact = false }: Prop
   return (
     <div className="relative w-full">
       <div
-        className={`flex items-center gap-2 bg-white transition-colors ${
+        className={`flex items-center gap-2 bg-white transition-colors min-w-0 ${
           compact
             ? 'border rounded-lg px-2.5 py-1'
             : 'border-2 rounded-2xl px-4 py-3 shadow-sm'
@@ -145,7 +145,7 @@ export default function SearchBar({ onSearch, isLoading, compact = false }: Prop
           onBlur={() => setTimeout(() => setFocused(false), 150)}
           onKeyDown={handleKeyDown}
           placeholder="찾으시는 상품을 입력하세요"
-          className={`flex-1 outline-none text-gray-800 placeholder-gray-400 bg-transparent ${compact ? 'text-sm' : 'text-base'}`}
+          className={`flex-1 min-w-0 outline-none text-gray-800 placeholder-gray-400 bg-transparent ${compact ? 'text-sm' : 'text-base'}`}
           autoComplete="off"
           style={{ fontSize: '16px' }} // iOS 줌 방지
         />
