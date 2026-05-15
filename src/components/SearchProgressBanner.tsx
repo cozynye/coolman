@@ -1,10 +1,20 @@
 'use client';
 
+import type { PriceStats } from '@/lib/types';
+
 interface Props {
+  isLoading: boolean;
   bunjangDone: boolean;
   joongnaDone: boolean;
   bunjangCount: number;
   joongnaCount: number;
+  stats: PriceStats | null;
+}
+
+function fmt(n: number) {
+  return n >= 10000
+    ? (n / 10000).toFixed(n % 10000 === 0 ? 0 : 1) + '만원'
+    : n.toLocaleString() + '원';
 }
 
 const platforms = [
@@ -13,14 +23,16 @@ const platforms = [
 ];
 
 export default function SearchProgressBanner({
+  isLoading,
   bunjangDone,
   joongnaDone,
   bunjangCount,
   joongnaCount,
+  stats,
 }: Props) {
   const doneCount = (bunjangDone ? 1 : 0) + (joongnaDone ? 1 : 0);
-  const progress = doneCount * 50;
-  const bothDone = doneCount === 2;
+  // 로딩 중이면 실제 진행률, 완료면 항상 100%
+  const progress = isLoading ? doneCount * 50 : 100;
   const totalCount = bunjangCount + joongnaCount;
 
   const isDone = { bunjang: bunjangDone, joongna: joongnaDone };
@@ -32,7 +44,7 @@ export default function SearchProgressBanner({
       <div className="flex items-start justify-between">
         <div>
           <h3 className="font-bold text-gray-900 text-base flex items-center gap-2">
-            {bothDone ? (
+            {!isLoading ? (
               <span className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
                 <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -44,12 +56,12 @@ export default function SearchProgressBanner({
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
             )}
-            {bothDone ? '검색 완료!' : '검색 중...'}
+            {!isLoading ? '검색 완료!' : '검색 중...'}
           </h3>
           <p className="text-sm text-gray-400 mt-0.5 ml-6">번개장터 · 중고나라 동시 검색</p>
         </div>
-        {bothDone && (
-          <div className="text-right">
+        {!isLoading && (
+          <div className="text-right shrink-0">
             <span className="text-2xl font-bold text-gray-900 tabular-nums">{totalCount.toLocaleString()}</span>
             <span className="text-sm font-normal text-gray-400 ml-1">개 발견</span>
           </div>
@@ -60,7 +72,7 @@ export default function SearchProgressBanner({
       <div>
         <div className="flex items-center justify-between text-xs mb-1.5">
           <span className="text-gray-400">진행률</span>
-          <span className={`font-semibold tabular-nums ${bothDone ? 'text-teal-600' : 'text-teal-500'}`}>
+          <span className={`font-semibold tabular-nums ${!isLoading ? 'text-teal-600' : 'text-teal-500'}`}>
             {progress}%
           </span>
         </div>
@@ -71,6 +83,22 @@ export default function SearchProgressBanner({
           />
         </div>
       </div>
+
+      {/* 가격 통계 — 완료 후 프로그레스 바 자리에 흡수 (레이아웃 시프트 제거) */}
+      {!isLoading && stats && (
+        <div className="flex gap-2 pt-1 border-t border-gray-50">
+          {[
+            { label: '최저가', value: fmt(stats.min) },
+            { label: '평균가', value: fmt(stats.avg) },
+            { label: '최고가', value: fmt(stats.max) },
+          ].map((s) => (
+            <div key={s.label} className="flex-1 text-center">
+              <p className="text-xs text-gray-400 mb-0.5">{s.label}</p>
+              <p className="font-bold text-gray-900 text-sm">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* 플랫폼 카드 */}
       <div className="grid grid-cols-2 gap-3">

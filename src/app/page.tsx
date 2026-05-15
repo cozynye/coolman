@@ -418,31 +418,15 @@ function HomePageInner() {
           </div>
         </div>
 
-        {/* 진행률 배너 */}
-        {isLoading && (
-          <SearchProgressBanner
-            bunjangDone={bunjangDone}
-            joongnaDone={joongnaDone}
-            bunjangCount={bunjangCount}
-            joongnaCount={joongnaCount}
-          />
-        )}
-
-        {/* 가격 통계 */}
-        {stats && !isLoading && (
-          <div className="flex gap-4 mb-5 p-3 bg-white border border-gray-100 rounded-xl text-center">
-            {[
-              { label: '최저', value: fmt(stats.min) },
-              { label: '평균', value: fmt(stats.avg) },
-              { label: '최고', value: fmt(stats.max) },
-            ].map((s) => (
-              <div key={s.label} className="flex-1">
-                <p className="text-xs text-gray-400 mb-0.5">{s.label}</p>
-                <p className="font-bold text-gray-900 text-sm">{s.value}</p>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* 진행률 배너 — 검색 중·완료 양쪽에 항상 표시 (레이아웃 시프트 없음) */}
+        <SearchProgressBanner
+          isLoading={isLoading}
+          bunjangDone={bunjangDone}
+          joongnaDone={joongnaDone}
+          bunjangCount={bunjangCount}
+          joongnaCount={joongnaCount}
+          stats={stats}
+        />
 
 
         {/* 사이드바 + 그리드 레이아웃 */}
