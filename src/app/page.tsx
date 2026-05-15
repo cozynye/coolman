@@ -550,18 +550,50 @@ function HomePageInner() {
           {/* 결과 그리드 */}
           <div className="flex-1 min-w-0">
             {isLoading && allProducts.length === 0 ? (
-              /* 아직 아무 결과도 없으면 스켈레톤 */
+              /* 아직 결과 없음 → 스켈레톤 */
               <div className={`grid ${cardSize === 'small' ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'} gap-3`}>
                 {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
+            ) : !isLoading && bunjangFailed && joongnaFailed ? (
+              /* 양쪽 플랫폼 모두 실패 → 에러 상태 */
+              <div className="text-center py-16">
+                <p className="text-5xl mb-4">😵</p>
+                <p className="font-medium text-gray-700">검색에 실패했습니다</p>
+                <p className="text-sm mt-1 text-gray-400 mb-6">
+                  네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요
+                </p>
+                <button
+                  onClick={() => handleSearch(currentKeyword)}
+                  className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-700 transition-colors"
+                >
+                  다시 검색
+                </button>
+              </div>
             ) : !isLoading && filtered.length === 0 ? (
+              /* 결과 없음 → 액션 유도 */
               <div className="text-center py-16 text-gray-400">
                 <p className="text-5xl mb-4">🔍</p>
-                <p className="font-medium">검색 결과가 없습니다</p>
-                <p className="text-sm mt-1">필터를 변경하거나 다른 키워드로 검색해보세요</p>
+                <p className="font-medium text-gray-600">검색 결과가 없습니다</p>
+                <p className="text-sm mt-1 mb-6">필터를 변경하거나 다른 키워드로 검색해보세요</p>
+                <div className="flex items-center justify-center gap-3">
+                  {(filter.platform !== 'all' || filter.sort !== 'latest' || filter.priceMin > 0 || filter.priceMax > 0) && (
+                    <button
+                      onClick={() => handleFilterChange({ platform: 'all', sort: 'latest', priceMin: 0, priceMax: 0 })}
+                      className="px-4 py-2 bg-teal-500 text-white rounded-xl text-sm font-medium hover:bg-teal-600 transition-colors"
+                    >
+                      필터 초기화
+                    </button>
+                  )}
+                  <button
+                    onClick={() => handleSearch(currentKeyword)}
+                    className="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    다시 검색
+                  </button>
+                </div>
               </div>
             ) : (
-              /* 하나라도 결과가 있으면 즉시 표시 (로딩 중에도) */
+              /* 결과 표시 (로딩 중 partial 포함) */
               <ResultGrid products={filtered} size={cardSize} />
             )}
           </div>
