@@ -217,7 +217,7 @@ export default function SearchBar({ onSearch, isLoading, compact = false }: Prop
                   <svg className="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span className="flex-1 text-sm text-gray-700">{kw}</span>
+                  <span className="flex-1 text-left text-sm text-gray-700">{kw}</span>
                   <button
                     onMouseDown={(e) => handleRemove(kw, e)}
                     className="text-gray-300 hover:text-gray-500 p-0.5"
