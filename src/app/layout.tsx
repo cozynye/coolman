@@ -1,0 +1,40 @@
+import type { Metadata, Viewport } from 'next';
+import './globals.css';
+
+export const viewport: Viewport = {
+  themeColor: '#14b8a6',
+};
+
+export const metadata: Metadata = {
+  title: '중고모아 - 중고나라 × 번개장터 통합 검색',
+  description: '중고나라와 번개장터를 한 번에 검색하세요. 중고 물품을 쉽고 빠르게 비교할 수 있는 통합 검색 서비스입니다.',
+  keywords: '중고모아, 중고나라, 번개장터, 중고거래, 통합검색',
+  authors: [{ name: '중고모아' }],
+  openGraph: {
+    type: 'website',
+    title: '중고모아 - 중고나라 × 번개장터 통합 검색',
+    description: '중고나라와 번개장터를 한 번에 검색하는 통합 검색 서비스',
+    url: 'https://coolman-junggo.vercel.app/',
+    siteName: '중고모아',
+  },
+  icons: {
+    icon: '/images/junggo-icon.png',
+    apple: '/images/junggo-icon.png',
+  },
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="ko">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.min.css"
+        />
+        <meta name="naver-site-verification" content="95999fdf14487df03a3504bd75303740c3d1fb2b" />
+        <meta name="google-site-verification" content="mJkJTBBd_7dbU9mLZXwirvRk_8r34RENokY5OZPTz4A" />
+      </head>
+      <body className="min-h-screen bg-gray-50 text-gray-900">{children}</body>
+    </html>
+  );
+}

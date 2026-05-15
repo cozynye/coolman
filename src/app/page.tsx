@@ -1,0 +1,441 @@
+'use client';
+
+import { useState, useMemo, useCallback } from 'react';
+import SearchBar, { saveRecentSearch } from '@/components/SearchBar';
+import ProductCard from '@/components/ProductCard';
+import FilterSidebar from '@/components/FilterSidebar';
+import type { Product, SearchResponse, FilterState, PriceStats } from '@/lib/types';
+
+// ─── 필터·정렬 로직 ────────────────────────────────────────────────
+function applyFilter(products: Product[], filter: FilterState): Product[] {
+  return products
+    .filter((p) => {
+      if (filter.platform !== 'all' && p.platform !== filter.platform) return false;
+      if (filter.priceMin > 0 && p.priceNum < filter.priceMin) return false;
+      if (filter.priceMax > 0 && p.priceNum > filter.priceMax) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (filter.sort === 'price-asc') return a.priceNum - b.priceNum;
+      if (filter.sort === 'price-desc') return b.priceNum - a.priceNum;
+      return b.timestamp - a.timestamp;
+    });
+}
+
+function calcStats(products: Product[]): PriceStats | null {
+  const prices = products
+    .map((p) => p.priceNum)
+    .filter((p) => typeof p === 'number' && isFinite(p) && p > 0);
+  if (prices.length === 0) return null;
+  const sum = prices.reduce((a, b) => a + b, 0);
+  return {
+    min: Math.min(...prices),
+    max: Math.max(...prices),
+    avg: Math.round(sum / prices.length),
+    count: prices.length,
+  };
+}
+
+function fmt(n: number) {
+  return n >= 10000
+    ? (n / 10000).toFixed(n % 10000 === 0 ? 0 : 1) + '만원'
+    : n.toLocaleString() + '원';
+}
+
+// ─── 플랫폼 상태 표시 ─────────────────────────────────────────────
+function PlatformStatusBar({
+  meta,
+  bunjangCount,
+  joongnaCount,
+}: {
+  meta: SearchResponse['meta'];
+  bunjangCount: number;
+  joongnaCount: number;
+}) {
+  return (
+    <div className="flex items-center gap-4 text-sm text-gray-500">
+      <span className="flex items-center gap-1.5">
+        <span className="inline-block w-2 h-2 rounded-full bg-red-400" />
+        번개장터 {meta.bunjang === 'failed' ? '실패' : `${bunjangCount}개`}
+      </span>
+      <span className="text-gray-200">|</span>
+      <span className="flex items-center gap-1.5">
+        <span className="inline-block w-2 h-2 rounded-full bg-teal-400" />
+        중고나라 {meta.joonggo === 'failed' ? '실패' : `${joongnaCount}개`}
+      </span>
+    </div>
+  );
+}
+
+// ─── 모바일 플로팅 필터 ──────────────────────────────────────────
+function MobileFilterSheet({
+  filter,
+  onChange,
+  totalCount,
+  bunjangCount,
+  joongnaCount,
+}: {
+  filter: FilterState;
+  onChange: (f: Partial<FilterState>) => void;
+  totalCount: number;
+  bunjangCount: number;
+  joongnaCount: number;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const SORTS = [
+    { value: 'latest' as const, label: '최신순' },
+    { value: 'price-asc' as const, label: '낮은가격' },
+    { value: 'price-desc' as const, label: '높은가격' },
+  ];
+
+  return (
+    <>
+      {/* 플로팅 버튼 */}
+      <button
+        onClick={() => setOpen(true)}
+        className="fixed bottom-6 right-4 z-40 flex items-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-full shadow-xl text-sm font-semibold"
+      >
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 8h10M11 12h2M13 16h-2" />
+        </svg>
+        필터
+        {(filter.platform !== 'all' || filter.sort !== 'latest' || filter.priceMin > 0 || filter.priceMax > 0) && (
+          <span className="w-2 h-2 rounded-full bg-teal-400" />
+        )}
+      </button>
+
+      {/* 바텀 시트 */}
+      {open && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="relative bg-white rounded-t-3xl px-5 pt-4 pb-8 space-y-5 animate-fadeIn">
+            <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-2" />
+
+            {/* 플랫폼 */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">플랫폼</p>
+              <div className="flex gap-2">
+                {[
+                  { value: 'all' as const, label: `전체 ${totalCount}` },
+                  { value: '번개장터' as const, label: `번개장터 ${bunjangCount}` },
+                  { value: '중고나라' as const, label: `중고나라 ${joongnaCount}` },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => onChange({ platform: opt.value })}
+                    className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                      filter.platform === opt.value
+                        ? 'bg-teal-500 text-white border-teal-500'
+                        : 'border-gray-200 text-gray-600'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 정렬 */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">정렬</p>
+              <div className="flex gap-2">
+                {SORTS.map((s) => (
+                  <button
+                    key={s.value}
+                    onClick={() => onChange({ sort: s.value })}
+                    className={`flex-1 py-2 rounded-xl text-sm font-medium border transition-colors ${
+                      filter.sort === s.value
+                        ? 'bg-teal-500 text-white border-teal-500'
+                        : 'border-gray-200 text-gray-600'
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setOpen(false)}
+              className="w-full py-3 bg-gray-900 text-white rounded-2xl font-semibold text-sm"
+            >
+              적용
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── 홈 히어로 ───────────────────────────────────────────────────
+function Hero({ onSearch, isLoading }: { onSearch: (kw: string) => void; isLoading: boolean }) {
+  return (
+    <main className="flex flex-col items-center justify-center min-h-[80dvh] px-4">
+      <div className="w-full max-w-xl space-y-6 text-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">중고모아</h1>
+          <p className="text-gray-500 text-base">번개장터와 중고나라, 한 번에 비교하세요</p>
+        </div>
+        <SearchBar onSearch={onSearch} isLoading={isLoading} />
+        <p className="text-xs text-gray-400">
+          번개장터 · 중고나라를 동시에 검색합니다
+        </p>
+      </div>
+    </main>
+  );
+}
+
+// ─── 결과 그리드 ─────────────────────────────────────────────────
+const PAGE_SIZE = 40;
+
+function ResultGrid({ products, size }: { products: Product[]; size: 'large' | 'small' }) {
+  const [page, setPage] = useState(1);
+  const visible = products.slice(0, page * PAGE_SIZE);
+  const hasMore = visible.length < products.length;
+
+  const cols =
+    size === 'small'
+      ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6'
+      : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4';
+
+  return (
+    <div>
+      <div className={`grid ${cols} gap-3`}>
+        {visible.map((p, i) => (
+          <ProductCard key={`${p.platform}-${p.link}-${i}`} product={p} size={size} />
+        ))}
+      </div>
+      {hasMore && (
+        <button
+          onClick={() => setPage((n) => n + 1)}
+          className="mt-6 w-full py-3 border border-gray-200 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+        >
+          더 보기 ({products.length - visible.length}개 남음)
+        </button>
+      )}
+      {!hasMore && products.length > 0 && (
+        <p className="mt-6 text-center text-xs text-gray-400">모든 결과를 불러왔습니다</p>
+      )}
+    </div>
+  );
+}
+
+// ─── 메인 컴포넌트 ────────────────────────────────────────────────
+export default function HomePage() {
+  const [searchResult, setSearchResult] = useState<SearchResponse | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentKeyword, setCurrentKeyword] = useState('');
+  const [cardSize, setCardSize] = useState<'large' | 'small'>('large');
+  const [filter, setFilter] = useState<FilterState>({
+    platform: 'all',
+    sort: 'latest',
+    priceMin: 0,
+    priceMax: 0,
+  });
+
+  const handleSearch = useCallback(async (keyword: string) => {
+    if (!keyword.trim()) return;
+    setIsLoading(true);
+    setCurrentKeyword(keyword);
+    setFilter({ platform: 'all', sort: 'latest', priceMin: 0, priceMax: 0 });
+
+    try {
+      const res = await fetch('/api/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyword }),
+      });
+      if (!res.ok) throw new Error('검색 실패');
+      const data: SearchResponse = await res.json();
+      saveRecentSearch(keyword);
+      setSearchResult(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const handleFilterChange = useCallback((partial: Partial<FilterState>) => {
+    setFilter((prev) => ({ ...prev, ...partial }));
+  }, []);
+
+  const allProducts = searchResult?.results ?? [];
+  const filtered = useMemo(() => applyFilter(allProducts, filter), [allProducts, filter]);
+  const stats = useMemo(() => calcStats(filtered), [filtered]);
+
+  const bunjangCount = allProducts.filter((p) => p.platform === '번개장터').length;
+  const joongnaCount = allProducts.filter((p) => p.platform === '중고나라').length;
+
+  // 검색 전 홈 화면
+  if (!searchResult && !isLoading) {
+    return <Hero onSearch={handleSearch} isLoading={isLoading} />;
+  }
+
+  // 로딩 화면
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[80dvh] gap-6">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-gray-100 border-t-teal-400 rounded-full animate-spin" />
+        </div>
+        <div className="text-center">
+          <p className="text-gray-700 font-semibold text-lg mb-1">&ldquo;{currentKeyword}&rdquo; 검색 중</p>
+          <p className="text-gray-400 text-sm">번개장터 · 중고나라 동시 검색 중입니다</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 결과 화면
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* 헤더 — 모바일: 더 작고 컴팩트, 데스크탑: 여유 있는 높이 */}
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-4">
+          <button
+            onClick={() => { setSearchResult(null); setCurrentKeyword(''); }}
+            className="text-gray-900 font-bold text-sm sm:text-lg shrink-0 hover:text-teal-600 transition-colors"
+          >
+            중고모아
+          </button>
+          <div className="flex-1 max-w-2xl">
+            <SearchBar onSearch={handleSearch} isLoading={isLoading} compact />
+          </div>
+        </div>
+      </header>
+
+      {/* 본문 */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* 결과 요약 */}
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <div>
+            <h2 className="font-bold text-gray-900 text-lg">
+              &ldquo;{currentKeyword}&rdquo;
+              <span className="ml-2 text-base font-normal text-gray-500">
+                {filtered.length.toLocaleString()}개
+              </span>
+            </h2>
+            {searchResult && (
+              <PlatformStatusBar
+                meta={searchResult.meta}
+                bunjangCount={bunjangCount}
+                joongnaCount={joongnaCount}
+              />
+            )}
+          </div>
+
+          {/* 뷰 사이즈 토글 + 공유 */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={async () => {
+                const url = `${location.origin}/?q=${encodeURIComponent(currentKeyword)}`;
+                try {
+                  await navigator.clipboard.writeText(url);
+                } catch {
+                  /* ignore */
+                }
+              }}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
+              aria-label="공유"
+              title="URL 복사"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
+            </button>
+            <div className="hidden sm:flex items-center border border-gray-200 rounded-xl overflow-hidden">
+              {(['large', 'small'] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setCardSize(s)}
+                  className={`p-2 transition-colors ${
+                    cardSize === s ? 'bg-gray-900 text-white' : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                  aria-label={s === 'large' ? '크게 보기' : '작게 보기'}
+                >
+                  {s === 'large' ? (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="3" y="3" width="7" height="7" rx="1" strokeWidth={2} />
+                      <rect x="14" y="3" width="7" height="7" rx="1" strokeWidth={2} />
+                      <rect x="3" y="14" width="7" height="7" rx="1" strokeWidth={2} />
+                      <rect x="14" y="14" width="7" height="7" rx="1" strokeWidth={2} />
+                    </svg>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <rect x="3" y="3" width="4" height="4" rx="0.5" strokeWidth={2} />
+                      <rect x="10" y="3" width="4" height="4" rx="0.5" strokeWidth={2} />
+                      <rect x="17" y="3" width="4" height="4" rx="0.5" strokeWidth={2} />
+                      <rect x="3" y="10" width="4" height="4" rx="0.5" strokeWidth={2} />
+                      <rect x="10" y="10" width="4" height="4" rx="0.5" strokeWidth={2} />
+                      <rect x="17" y="10" width="4" height="4" rx="0.5" strokeWidth={2} />
+                      <rect x="3" y="17" width="4" height="4" rx="0.5" strokeWidth={2} />
+                      <rect x="10" y="17" width="4" height="4" rx="0.5" strokeWidth={2} />
+                      <rect x="17" y="17" width="4" height="4" rx="0.5" strokeWidth={2} />
+                    </svg>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 가격 통계 */}
+        {stats && (
+          <div className="flex gap-4 mb-5 p-3 bg-white border border-gray-100 rounded-xl text-center">
+            {[
+              { label: '최저', value: fmt(stats.min) },
+              { label: '평균', value: fmt(stats.avg) },
+              { label: '최고', value: fmt(stats.max) },
+            ].map((s) => (
+              <div key={s.label} className="flex-1">
+                <p className="text-xs text-gray-400 mb-0.5">{s.label}</p>
+                <p className="font-bold text-gray-900 text-sm">{s.value}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 사이드바 + 그리드 레이아웃 */}
+        <div className="flex gap-8">
+          {/* 데스크탑 사이드바 (md 이상) */}
+          <div className="hidden md:block">
+            <FilterSidebar
+              filter={filter}
+              onChange={handleFilterChange}
+              totalCount={allProducts.length}
+              bunjangCount={bunjangCount}
+              joongnaCount={joongnaCount}
+            />
+          </div>
+
+          {/* 결과 그리드 */}
+          <div className="flex-1 min-w-0">
+            {filtered.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <p className="text-5xl mb-4">🔍</p>
+                <p className="font-medium">검색 결과가 없습니다</p>
+                <p className="text-sm mt-1">필터를 변경하거나 다른 키워드로 검색해보세요</p>
+              </div>
+            ) : (
+              <ResultGrid products={filtered} size={cardSize} />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 모바일 플로팅 필터 */}
+      <div className="md:hidden">
+        <MobileFilterSheet
+          filter={filter}
+          onChange={handleFilterChange}
+          totalCount={allProducts.length}
+          bunjangCount={bunjangCount}
+          joongnaCount={joongnaCount}
+        />
+      </div>
+    </div>
+  );
+}
