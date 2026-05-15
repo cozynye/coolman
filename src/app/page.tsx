@@ -70,7 +70,40 @@ function PlatformStatusBar({
   );
 }
 
+// ─── 스크롤 투 탑 버튼 ───────────────────────────────────────────
+function ScrollToTop() {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const handle = () => setShow(window.scrollY > 500);
+    window.addEventListener('scroll', handle, { passive: true });
+    return () => window.removeEventListener('scroll', handle);
+  }, []);
+
+  if (!show) return null;
+
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className="fixed bottom-6 right-4 z-40 w-10 h-10 bg-white border border-gray-200 shadow-lg rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-50 hover:text-gray-800 transition-colors"
+      aria-label="맨 위로"
+    >
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    </button>
+  );
+}
+
 // ─── 모바일 인라인 필터 칩 바 ────────────────────────────────────
+const MOBILE_PRICE_PRESETS = [
+  { label: '전체', min: 0, max: 0 },
+  { label: '~10만', min: 0, max: 100_000 },
+  { label: '10~100만', min: 100_000, max: 1_000_000 },
+  { label: '100~300만', min: 1_000_000, max: 3_000_000 },
+  { label: '300만+', min: 3_000_000, max: 0 },
+];
+
 function MobileFilterBar({
   filter,
   onChange,
@@ -196,6 +229,29 @@ function MobileFilterBar({
               </div>
             </div>
 
+            {/* 가격대 */}
+            <div>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">가격대</p>
+              <div className="grid grid-cols-3 gap-2">
+                {MOBILE_PRICE_PRESETS.map((p) => {
+                  const active = filter.priceMin === p.min && filter.priceMax === p.max;
+                  return (
+                    <button
+                      key={p.label}
+                      onClick={() => onChange({ priceMin: p.min, priceMax: p.max })}
+                      className={`py-2 rounded-xl text-sm font-medium border transition-colors ${
+                        active
+                          ? 'bg-teal-500 text-white border-teal-500'
+                          : 'border-gray-200 text-gray-600'
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <button
               onClick={() => setOpen(false)}
               className="w-full py-3 bg-gray-900 text-white rounded-2xl font-semibold text-sm"
@@ -284,6 +340,7 @@ function HomePageInner() {
 
   const runSearch = useCallback(async (keyword: string) => {
     if (!keyword.trim()) return;
+    window.scrollTo({ top: 0, behavior: 'instant' });
     setIsLoading(true);
     setCurrentKeyword(keyword);
     setFilter({ platform: 'all', sort: 'latest', priceMin: 0, priceMax: 0 });
@@ -511,6 +568,7 @@ function HomePageInner() {
         </div>
       </div>
 
+      <ScrollToTop />
     </div>
   );
 }

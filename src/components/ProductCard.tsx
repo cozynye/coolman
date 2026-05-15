@@ -9,8 +9,8 @@ interface Props {
 }
 
 const PLATFORM_STYLE = {
-  번개장터: { bg: 'bg-red-500', label: 'B' },
-  중고나라: { bg: 'bg-teal-500', label: 'J' },
+  번개장터: { bg: 'bg-red-500', label: '번' },
+  중고나라: { bg: 'bg-teal-500', label: '중' },
 } as const;
 
 const FALLBACK = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"%3E%3Crect fill="%23f0f0f0" width="400" height="400"/%3E%3Ctext fill="%23aaa" font-size="60" font-family="sans-serif" x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle"%3E?%3C/text%3E%3C/svg%3E';

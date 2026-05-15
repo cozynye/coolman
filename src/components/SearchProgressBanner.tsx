@@ -63,7 +63,7 @@ export default function SearchProgressBanner({
         {!isLoading && (
           <div className="text-right shrink-0">
             <span className="text-lg sm:text-2xl font-bold text-gray-900 tabular-nums">{totalCount.toLocaleString()}</span>
-            <span className="text-xs sm:text-sm font-normal text-gray-400 ml-1">개 발견</span>
+            <span className="text-xs sm:text-sm font-normal text-gray-400 ml-1">개 수집</span>
           </div>
         )}
       </div>
@@ -100,8 +100,8 @@ export default function SearchProgressBanner({
         </div>
       )}
 
-      {/* 플랫폼 카드 */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* 플랫폼 카드 — 태블릿 이상에서만 표시 (모바일 높이 절약) */}
+      <div className="hidden sm:grid grid-cols-2 gap-3">
         {platforms.map((p) => {
           const done = isDone[p.key];
           const count = counts[p.key];
@@ -135,6 +135,20 @@ export default function SearchProgressBanner({
                 </p>
               </div>
             </div>
+          );
+        })}
+      </div>
+
+      {/* 모바일용 인라인 플랫폼 요약 */}
+      <div className="sm:hidden flex items-center gap-4 text-xs text-gray-500 pt-1 border-t border-gray-50">
+        {platforms.map((p) => {
+          const done = isDone[p.key];
+          const count = counts[p.key];
+          return (
+            <span key={p.name} className={`flex items-center gap-1 ${done ? p.color : 'text-gray-400'}`}>
+              {p.icon}
+              {done ? `${count.toLocaleString()}개` : '검색 중...'}
+            </span>
           );
         })}
       </div>
