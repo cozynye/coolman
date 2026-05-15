@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import SearchBar, { saveRecentSearch } from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
+import SkeletonCard from '@/components/SkeletonCard';
 import FilterSidebar from '@/components/FilterSidebar';
 import type { Product, SearchResponse, FilterState, PriceStats } from '@/lib/types';
 
@@ -287,26 +288,11 @@ function HomePageInner() {
   const joongnaCount = allProducts.filter((p) => p.platform === '중고나라').length;
 
   // 검색 전 홈 화면
-  if (!searchResult && !isLoading) {
+  if (!currentKeyword && !isLoading) {
     return <Hero onSearch={handleSearch} isLoading={isLoading} />;
   }
 
-  // 로딩 화면
-  if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[80dvh] gap-6">
-        <div className="relative">
-          <div className="w-16 h-16 border-4 border-gray-100 border-t-teal-400 rounded-full animate-spin" />
-        </div>
-        <div className="text-center">
-          <p className="text-gray-700 font-semibold text-lg mb-1">&ldquo;{currentKeyword}&rdquo; 검색 중</p>
-          <p className="text-gray-400 text-sm">번개장터 · 중고나라 동시 검색 중입니다</p>
-        </div>
-      </div>
-    );
-  }
-
-  // 결과 화면
+  // 검색 중 또는 결과 화면 (레이아웃 공유)
   return (
     <div className="min-h-screen bg-gray-50">
       {/* 헤더 — 모바일: 더 작고 컴팩트, 데스크탑: 여유 있는 높이 */}
@@ -329,13 +315,23 @@ function HomePageInner() {
         {/* 결과 요약 */}
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
-            <h2 className="font-bold text-gray-900 text-lg">
+            <h2 className="font-bold text-gray-900 text-lg flex items-center gap-2">
               &ldquo;{currentKeyword}&rdquo;
-              <span className="ml-2 text-base font-normal text-gray-500">
-                {filtered.length.toLocaleString()}개
-              </span>
+              {isLoading ? (
+                <span className="text-sm font-normal text-gray-400 flex items-center gap-1.5">
+                  <svg className="w-3.5 h-3.5 animate-spin text-teal-400" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  검색 중...
+                </span>
+              ) : (
+                <span className="text-base font-normal text-gray-500">
+                  {filtered.length.toLocaleString()}개
+                </span>
+              )}
             </h2>
-            {searchResult && (
+            {searchResult && !isLoading && (
               <PlatformStatusBar
                 meta={searchResult.meta}
                 bunjangCount={bunjangCount}
@@ -430,7 +426,11 @@ function HomePageInner() {
 
           {/* 결과 그리드 */}
           <div className="flex-1 min-w-0">
-            {filtered.length === 0 ? (
+            {isLoading ? (
+              <div className={`grid ${cardSize === 'small' ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'} gap-3`}>
+                {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
+              </div>
+            ) : filtered.length === 0 ? (
               <div className="text-center py-16 text-gray-400">
                 <p className="text-5xl mb-4">🔍</p>
                 <p className="font-medium">검색 결과가 없습니다</p>
