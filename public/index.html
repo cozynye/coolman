@@ -138,15 +138,37 @@
       <!-- Search Box -->
       <div class="search-box">
         <div class="search-input-wrapper">
-          <input
-            type="text"
-            id="searchInput"
-            placeholder="찾으시는 상품을 입력하세요 (Enter로 검색)"
-          />
+          <div class="search-input-container">
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="찾으시는 상품을 입력하세요"
+              autocomplete="off"
+            />
+            <!-- Autocomplete Dropdown -->
+            <div class="autocomplete-dropdown" id="autocompleteDropdown"></div>
+          </div>
           <button id="searchButton">
             <span class="desktop-text"><iconify-icon icon="solar:magnifer-linear" width="18" style="vertical-align: -3px;"></iconify-icon> 검색하기</span
             ><span class="mobile-text"><iconify-icon icon="solar:magnifer-linear" width="16" style="vertical-align: -3px;"></iconify-icon> 검색</span>
           </button>
+        </div>
+
+        <!-- Platform Search Status (검색 중 표시) -->
+        <div class="platform-search-status" id="platformSearchStatus">
+          <div class="platform-status-item" id="statusBunjang">
+            <span class="platform-status-dot bunjang"></span>
+            <span class="platform-status-name">번개장터</span>
+            <span class="platform-status-label" id="statusBunjangLabel">검색 중</span>
+            <div class="platform-status-spinner" id="statusBunjangSpinner"></div>
+          </div>
+          <div class="platform-status-sep"></div>
+          <div class="platform-status-item" id="statusJoongna">
+            <span class="platform-status-dot joongna"></span>
+            <span class="platform-status-name">중고나라</span>
+            <span class="platform-status-label" id="statusJoongnaLabel">검색 중</span>
+            <div class="platform-status-spinner" id="statusJoongnaSpinner"></div>
+          </div>
         </div>
 
         <!-- Filter Buttons -->

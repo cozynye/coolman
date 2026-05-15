@@ -1095,6 +1095,204 @@ body::after {
   opacity: 0.3;
 }
 
+/* === Search Input Container (for autocomplete positioning) === */
+.search-input-container {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+}
+
+.search-input-container #searchInput {
+  width: 100%;
+}
+
+/* === Autocomplete Dropdown === */
+.autocomplete-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: rgba(18, 18, 22, 0.97);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  z-index: 50;
+  animation: autocompleteIn 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.autocomplete-dropdown.show {
+  display: block;
+}
+
+@keyframes autocompleteIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.autocomplete-header {
+  padding: 10px 14px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.3);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 16px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.15s;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.autocomplete-item:first-child {
+  border-top: none;
+}
+
+.autocomplete-item iconify-icon {
+  color: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.autocomplete-item span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.autocomplete-item:hover,
+.autocomplete-item.focused {
+  background: rgba(45, 212, 191, 0.08);
+  color: #fff;
+}
+
+.autocomplete-item:hover iconify-icon,
+.autocomplete-item.focused iconify-icon {
+  color: #2dd4bf;
+}
+
+.autocomplete-item .keyword-highlight {
+  background: rgba(45, 212, 191, 0.18);
+  color: #2dd4bf;
+}
+
+/* === Platform Search Status === */
+.platform-search-status {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 10px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 14px;
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.platform-search-status.show {
+  display: flex;
+}
+
+.platform-status-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.platform-status-sep {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.platform-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.platform-status-dot.bunjang {
+  background: #ef4444;
+}
+
+.platform-status-dot.joongna {
+  background: #2dd4bf;
+}
+
+.platform-status-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.platform-status-label {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.35);
+  transition: color 0.3s;
+}
+
+.platform-status-item.done .platform-status-label {
+  color: #2dd4bf;
+}
+
+.platform-status-item.failed .platform-status-label {
+  color: rgba(239, 68, 68, 0.7);
+}
+
+.platform-status-spinner {
+  width: 12px;
+  height: 12px;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.5);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+.platform-status-item.done .platform-status-spinner,
+.platform-status-item.failed .platform-status-spinner {
+  display: none;
+}
+
+.platform-status-item.done::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232dd4bf' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/contain no-repeat;
+  flex-shrink: 0;
+}
+
+.platform-status-item.failed::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ef4444' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'/%3E%3Cline x1='6' y1='6' x2='18' y2='18'/%3E%3C/svg%3E") center/contain no-repeat;
+  flex-shrink: 0;
+}
+
+/* === Recent Chip Active State (bug fix) === */
+.recent-chip.active {
+  background: rgba(45, 212, 191, 0.12);
+  border-color: rgba(45, 212, 191, 0.35);
+  color: #2dd4bf;
+}
+
 /* === Responsive === */
 @media (max-width: 768px) {
   body {

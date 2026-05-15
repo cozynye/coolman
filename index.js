@@ -201,3 +201,12 @@ app.get('/api/test-raw', async (req, res) => {
 
 // Vercel을 위한 export (serverless function)
 module.exports = app;
+
+// 로컬 개발 환경에서는 직접 서버 실행
+if (require.main === module) {
+    require('dotenv').config();
+    const localPort = process.env.PORT || 3010;
+    app.listen(localPort, () => {
+        console.log(`로컬 서버 실행: http://localhost:${localPort}`);
+    });
+}

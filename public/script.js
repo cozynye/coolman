@@ -123,7 +123,8 @@ function renderRecentSearches() {
   container.style.display = 'block';
   chipsContainer.innerHTML = searches.map(s => {
     const safe = escapeHtml(s);
-    return `<span class="recent-chip" data-keyword="${safe}">
+    const isActive = s === currentKeyword;
+    return `<span class="recent-chip${isActive ? ' active' : ''}" data-keyword="${safe}">
       ${safe}
       <button class="recent-chip-remove" data-remove="${safe}" aria-label="삭제">×</button>
     </span>`;
@@ -241,6 +242,51 @@ function updatePriceStats() {
   statsEl.style.display = 'flex';
 }
 
+// === 플랫폼 검색 상태 UI ===
+const platformSearchStatus = document.getElementById('platformSearchStatus');
+const statusBunjang = document.getElementById('statusBunjang');
+const statusJoongna = document.getElementById('statusJoongna');
+const statusBunjangLabel = document.getElementById('statusBunjangLabel');
+const statusJoongnaLabel = document.getElementById('statusJoongnaLabel');
+
+function showPlatformStatus() {
+  statusBunjang.className = 'platform-status-item';
+  statusJoongna.className = 'platform-status-item';
+  statusBunjangLabel.textContent = '검색 중';
+  statusJoongnaLabel.textContent = '검색 중';
+  platformSearchStatus.classList.add('show');
+}
+
+function updatePlatformStatusDone(bunjangCount, joongnaCount, bunjangFailed, joongnaFailed) {
+  if (bunjangFailed) {
+    statusBunjang.classList.add('failed');
+    statusBunjangLabel.textContent = '실패';
+  } else {
+    statusBunjang.classList.add('done');
+    statusBunjangLabel.textContent = `${bunjangCount}개`;
+  }
+  if (joongnaFailed) {
+    statusJoongna.classList.add('failed');
+    statusJoongnaLabel.textContent = '실패';
+  } else {
+    statusJoongna.classList.add('done');
+    statusJoongnaLabel.textContent = `${joongnaCount}개`;
+  }
+  setTimeout(() => {
+    platformSearchStatus.style.transition = 'opacity 0.4s';
+    platformSearchStatus.style.opacity = '0';
+    setTimeout(() => {
+      platformSearchStatus.classList.remove('show');
+      platformSearchStatus.style.opacity = '';
+      platformSearchStatus.style.transition = '';
+    }, 400);
+  }, 2500);
+}
+
+function hidePlatformStatus() {
+  platformSearchStatus.classList.remove('show');
+}
+
 // === 검색 ===
 async function searchProducts() {
   const keyword = searchInput.value.trim().substring(0, MAX_KEYWORD_LENGTH);
@@ -250,6 +296,9 @@ async function searchProducts() {
   }
 
   currentKeyword = keyword;
+
+  // 자동완성 닫기
+  hideAutocomplete();
 
   // 최근 검색어 저장
   saveRecentSearch(keyword);
@@ -268,7 +317,8 @@ async function searchProducts() {
   }
   currentAbortController = new AbortController();
 
-  // 스켈레톤 표시
+  // 검색 중 상태 표시
+  showPlatformStatus();
   loadingElement.classList.remove("show");
   showSkeletons();
   allProducts = [];
@@ -288,23 +338,22 @@ async function searchProducts() {
     if (response.ok) {
       allProducts = data.results || [];
 
-      // 플랫폼별 상태 표시
-      if (data.meta) {
-        if (data.meta.bunjang === 'failed') {
-          showToast("번개장터 검색에 실패했습니다", "warning");
-        }
-        if (data.meta.joonggo === 'failed') {
-          showToast("중고나라 검색에 실패했습니다", "warning");
-        }
-      }
+      const bunjangCount = allProducts.filter(p => p.platform === '번개장터').length;
+      const joongnaCount = allProducts.filter(p => p.platform === '중고나라').length;
+      const bunjangFailed = data.meta?.bunjang === 'failed';
+      const joongnaFailed = data.meta?.joonggo === 'failed';
+
+      updatePlatformStatusDone(bunjangCount, joongnaCount, bunjangFailed, joongnaFailed);
 
       applyFilter();
       resultsSection.style.display = "block";
     } else {
+      hidePlatformStatus();
       throw new Error(data.error || "검색 중 오류가 발생했습니다.");
     }
   } catch (error) {
-    if (error.name === 'AbortError') return; // 사용자가 새 검색을 시작한 경우
+    if (error.name === 'AbortError') { hidePlatformStatus(); return; }
+    hidePlatformStatus();
     resultsSection.style.display = "none";
     showToast(error.message, "error");
   } finally {
@@ -433,10 +482,87 @@ window.addEventListener("scroll", () => {
   }
 }, { passive: true });
 
+// === 자동완성 ===
+const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+let autocompleteActiveIndex = -1;
+
+function showAutocomplete(typed) {
+  const recent = getRecentSearches();
+  const keyword = typed.trim();
+  const matches = keyword
+    ? recent.filter(s => s.toLowerCase().includes(keyword.toLowerCase())).slice(0, 8)
+    : recent.slice(0, 8);
+
+  if (matches.length === 0) {
+    hideAutocomplete();
+    return;
+  }
+
+  autocompleteDropdown.innerHTML =
+    `<div class="autocomplete-header">최근 검색</div>` +
+    matches.map((s, i) => {
+      const safe = escapeHtml(s);
+      const highlighted = keyword ? highlightKeyword(safe, keyword) : safe;
+      return `<div class="autocomplete-item" data-keyword="${safe}" data-index="${i}">
+        <iconify-icon icon="solar:history-linear" width="14"></iconify-icon>
+        <span>${highlighted}</span>
+      </div>`;
+    }).join('');
+
+  autocompleteDropdown.classList.add('show');
+  autocompleteActiveIndex = -1;
+}
+
+function hideAutocomplete() {
+  autocompleteDropdown.classList.remove('show');
+  autocompleteActiveIndex = -1;
+}
+
+function navigateAutocomplete(direction) {
+  const items = autocompleteDropdown.querySelectorAll('.autocomplete-item');
+  if (!items.length) return;
+  items[autocompleteActiveIndex]?.classList.remove('focused');
+  autocompleteActiveIndex = Math.max(-1, Math.min(items.length - 1, autocompleteActiveIndex + direction));
+  if (autocompleteActiveIndex >= 0) {
+    items[autocompleteActiveIndex].classList.add('focused');
+    searchInput.value = items[autocompleteActiveIndex].dataset.keyword;
+  }
+}
+
+searchInput.addEventListener('input', () => {
+  if (getRecentSearches().length > 0) showAutocomplete(searchInput.value);
+  else hideAutocomplete();
+});
+
+searchInput.addEventListener('focus', () => {
+  if (getRecentSearches().length > 0) showAutocomplete(searchInput.value);
+});
+
+searchInput.addEventListener('keydown', (e) => {
+  if (!autocompleteDropdown.classList.contains('show')) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); navigateAutocomplete(1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); navigateAutocomplete(-1); }
+  else if (e.key === 'Escape') { hideAutocomplete(); }
+});
+
+// mousedown으로 처리해야 input blur보다 먼저 실행됨
+autocompleteDropdown.addEventListener('mousedown', (e) => {
+  const item = e.target.closest('.autocomplete-item');
+  if (!item) return;
+  e.preventDefault();
+  searchInput.value = item.dataset.keyword;
+  hideAutocomplete();
+  searchProducts();
+});
+
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.search-input-container')) hideAutocomplete();
+});
+
 // === 이벤트 리스너 ===
-searchButton.addEventListener("click", searchProducts);
+searchButton.addEventListener("click", () => { hideAutocomplete(); searchProducts(); });
 searchInput.addEventListener("keypress", (e) => {
-  if (e.key === "Enter") searchProducts();
+  if (e.key === "Enter") { hideAutocomplete(); searchProducts(); }
 });
 
 // Header title click - 초기 화면으로
@@ -604,13 +730,14 @@ document.getElementById("shareBtn").addEventListener("click", async () => {
 document.getElementById('recentChips').addEventListener('click', (e) => {
   const removeBtn = e.target.closest('.recent-chip-remove');
   if (removeBtn) {
-    e.stopPropagation();
     removeRecentSearch(removeBtn.dataset.remove);
     return;
   }
   const chip = e.target.closest('.recent-chip');
   if (chip) {
-    searchInput.value = chip.dataset.keyword;
+    const keyword = chip.dataset.keyword; // DOM 변경 전에 먼저 캡처
+    searchInput.value = keyword;
+    hideAutocomplete();
     searchProducts();
   }
 });
