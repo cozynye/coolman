@@ -13,18 +13,29 @@ import type { Product, FilterState, PriceStats } from '@/lib/types';
 
 // ─── 필터·정렬 로직 ────────────────────────────────────────────────
 function applyFilter(products: Product[], filter: FilterState): Product[] {
-  return products
-    .filter((p) => {
-      if (filter.platform !== 'all' && p.platform !== filter.platform) return false;
-      if (filter.priceMin > 0 && p.priceNum < filter.priceMin) return false;
-      if (filter.priceMax > 0 && p.priceNum > filter.priceMax) return false;
-      return true;
-    })
-    .sort((a, b) => {
-      if (filter.sort === 'price-asc') return a.priceNum - b.priceNum;
-      if (filter.sort === 'price-desc') return b.priceNum - a.priceNum;
-      return b.timestamp - a.timestamp;
-    });
+  const filtered = products.filter((p) => {
+    if (filter.platform !== 'all' && p.platform !== filter.platform) return false;
+    if (filter.priceMin > 0 && p.priceNum < filter.priceMin) return false;
+    if (filter.priceMax > 0 && p.priceNum > filter.priceMax) return false;
+    return true;
+  });
+
+  if (filter.sort === 'price-asc') return [...filtered].sort((a, b) => a.priceNum - b.priceNum);
+  if (filter.sort === 'price-desc') return [...filtered].sort((a, b) => b.priceNum - a.priceNum);
+
+  // 기본(혼합순): 특정 플랫폼 선택 시 API 순서 그대로, 전체일 때 교차 병합
+  if (filter.platform !== 'all') return filtered;
+
+  // 교차 병합: 번개1 중고1 번개2 중고2 … (각 플랫폼 API 관련도순 유지)
+  const bunjang = filtered.filter((p) => p.platform === '번개장터');
+  const joongna = filtered.filter((p) => p.platform === '중고나라');
+  const result: Product[] = [];
+  const len = Math.max(bunjang.length, joongna.length);
+  for (let i = 0; i < len; i++) {
+    if (i < bunjang.length) result.push(bunjang[i]);
+    if (i < joongna.length) result.push(joongna[i]);
+  }
+  return result;
 }
 
 function calcStats(products: Product[]): PriceStats | null {
@@ -139,7 +150,7 @@ function MobileFilterBar({
   const [open, setOpen] = useState(false);
 
   const SORTS = [
-    { value: 'latest' as const, label: '최신순' },
+    { value: 'latest' as const, label: '혼합순' },
     { value: 'price-asc' as const, label: '낮은가격' },
     { value: 'price-desc' as const, label: '높은가격' },
   ];

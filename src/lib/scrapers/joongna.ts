@@ -41,8 +41,11 @@ async function fetchPage(keyword: string, page: number): Promise<(Product & { _s
       if (!title) return;
 
       const image = $img.attr('src') ?? '';
-      const text = $el.text();
-      const priceMatch = text.match(/([\d,]+)원/);
+      const rawText = $el.text();
+      // "YYYY/MM" 날짜 패턴이 가격 앞에 바로 붙어 숫자가 오염되는 버그 방지
+      // 예: "2026/11" + "5,200,000원" → "2026/115,200,000원" → 115,200,000 오파싱
+      const textForPrice = rawText.replace(/\d{4}\/\d{1,2}/g, ' ');
+      const priceMatch = textForPrice.match(/([\d,]+)원/);
       const priceNum = priceMatch ? parseInt(priceMatch[1].replace(/,/g, ''), 10) : 0;
       const priceStr = priceNum > 0 ? priceNum.toLocaleString('ko-KR') + '원' : '가격문의';
 

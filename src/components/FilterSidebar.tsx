@@ -22,7 +22,7 @@ const PRICE_PRESETS = [
 ];
 
 const SORTS: { value: SortOption; label: string }[] = [
-  { value: 'latest', label: '최신순' },
+  { value: 'latest', label: '혼합순' },
   { value: 'price-asc', label: '낮은가격순' },
   { value: 'price-desc', label: '높은가격순' },
 ];
