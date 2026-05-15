@@ -70,8 +70,8 @@ function PlatformStatusBar({
   );
 }
 
-// ─── 모바일 플로팅 필터 ──────────────────────────────────────────
-function MobileFilterSheet({
+// ─── 모바일 인라인 필터 칩 바 ────────────────────────────────────
+function MobileFilterBar({
   filter,
   onChange,
   totalCount,
@@ -92,21 +92,58 @@ function MobileFilterSheet({
     { value: 'price-desc' as const, label: '높은가격' },
   ];
 
-  return (
-    <>
-      {/* 플로팅 버튼 */}
+  const sortActive = filter.sort !== 'latest';
+  const platformActive = filter.platform !== 'all';
+  const priceActive = filter.priceMin > 0 || filter.priceMax > 0;
+  const anyActive = sortActive || platformActive || priceActive;
+
+  const sortLabel = SORTS.find((s) => s.value === filter.sort)?.label ?? '최신순';
+  const platformLabel = filter.platform === 'all' ? '플랫폼' : filter.platform;
+  const priceLabel = (() => {
+    if (!priceActive) return '가격대';
+    const min = filter.priceMin > 0 ? `${filter.priceMin / 10000}만` : '';
+    const max = filter.priceMax > 0 ? `${filter.priceMax / 10000}만` : '';
+    return min && max ? `${min}~${max}` : min ? `${min}~` : `~${max}`;
+  })();
+
+  function Chip({ label, active }: { label: string; active: boolean }) {
+    return (
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-4 z-40 flex items-center gap-2 bg-gray-900 text-white px-4 py-3 rounded-full shadow-xl text-sm font-semibold"
+        className={`flex items-center gap-1 shrink-0 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors ${
+          active
+            ? 'bg-teal-500 text-white border-teal-500'
+            : 'bg-white text-gray-600 border-gray-200'
+        }`}
       >
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h18M7 8h10M11 12h2M13 16h-2" />
-        </svg>
-        필터
-        {(filter.platform !== 'all' || filter.sort !== 'latest' || filter.priceMin > 0 || filter.priceMax > 0) && (
-          <span className="w-2 h-2 rounded-full bg-teal-400" />
+        {label}
+        {active ? (
+          <span className="w-1.5 h-1.5 rounded-full bg-white/70 ml-0.5" />
+        ) : (
+          <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         )}
       </button>
+    );
+  }
+
+  return (
+    <>
+      {/* 칩 바 */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-0.5 -mx-4 px-4">
+        <Chip label={sortLabel} active={sortActive} />
+        <Chip label={platformLabel} active={platformActive} />
+        <Chip label={priceLabel} active={priceActive} />
+        {anyActive && (
+          <button
+            onClick={() => onChange({ platform: 'all', sort: 'latest', priceMin: 0, priceMax: 0 })}
+            className="flex items-center shrink-0 px-3 py-1.5 rounded-full border border-gray-200 text-xs text-gray-500 bg-white"
+          >
+            초기화
+          </button>
+        )}
+      </div>
 
       {/* 바텀 시트 */}
       {open && (
@@ -314,7 +351,7 @@ function HomePageInner() {
 
   // 검색 중 또는 결과 화면 (레이아웃 공유)
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 animate-fadeIn">
       {/* 헤더 — 모바일: 더 작고 컴팩트, 데스크탑: 여유 있는 높이 */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-4">
@@ -429,6 +466,17 @@ function HomePageInner() {
         />
 
 
+        {/* 모바일 필터 칩 바 */}
+        <div className="md:hidden mb-4">
+          <MobileFilterBar
+            filter={filter}
+            onChange={handleFilterChange}
+            totalCount={allProducts.length}
+            bunjangCount={bunjangCount}
+            joongnaCount={joongnaCount}
+          />
+        </div>
+
         {/* 사이드바 + 그리드 레이아웃 */}
         <div className="flex gap-8">
           {/* 데스크탑 사이드바 (md 이상) */}
@@ -463,16 +511,6 @@ function HomePageInner() {
         </div>
       </div>
 
-      {/* 모바일 플로팅 필터 */}
-      <div className="md:hidden">
-        <MobileFilterSheet
-          filter={filter}
-          onChange={handleFilterChange}
-          totalCount={allProducts.length}
-          bunjangCount={bunjangCount}
-          joongnaCount={joongnaCount}
-        />
-      </div>
     </div>
   );
 }

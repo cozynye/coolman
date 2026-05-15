@@ -62,8 +62,8 @@ export default function SearchProgressBanner({
         </div>
         {!isLoading && (
           <div className="text-right shrink-0">
-            <span className="text-2xl font-bold text-gray-900 tabular-nums">{totalCount.toLocaleString()}</span>
-            <span className="text-sm font-normal text-gray-400 ml-1">개 발견</span>
+            <span className="text-lg sm:text-2xl font-bold text-gray-900 tabular-nums">{totalCount.toLocaleString()}</span>
+            <span className="text-xs sm:text-sm font-normal text-gray-400 ml-1">개 발견</span>
           </div>
         )}
       </div>
