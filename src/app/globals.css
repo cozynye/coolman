@@ -23,6 +23,15 @@ body {
   animation: fadeIn 0.15s ease-out;
 }
 
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

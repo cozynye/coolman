@@ -43,8 +43,8 @@ async function fetchPage(keyword: string, page: number): Promise<(Product & { _s
       const image = $img.attr('src') ?? '';
       const text = $el.text();
       const priceMatch = text.match(/([\d,]+)원/);
-      const priceStr = priceMatch ? priceMatch[1] + '원' : '가격문의';
       const priceNum = priceMatch ? parseInt(priceMatch[1].replace(/,/g, ''), 10) : 0;
+      const priceStr = priceNum > 0 ? priceNum.toLocaleString('ko-KR') + '원' : '가격문의';
 
       const ts = baseTs - ((page - 1) * 100 + i);
 

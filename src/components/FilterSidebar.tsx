@@ -27,9 +27,16 @@ const SORTS: { value: SortOption; label: string }[] = [
 ];
 
 function fmt(n: number) {
-  return n >= 10000
-    ? (n / 10000).toFixed(n % 10000 === 0 ? 0 : 1) + '만원'
-    : n.toLocaleString() + '원';
+  if (n >= 100_000_000) {
+    const eok = Math.floor(n / 100_000_000);
+    const man = Math.round((n % 100_000_000) / 10_000);
+    return man > 0 ? `${eok}억 ${man}만원` : `${eok}억원`;
+  }
+  if (n >= 10_000) {
+    const man = n / 10_000;
+    return (Number.isInteger(man) ? man : man.toFixed(1)) + '만원';
+  }
+  return n.toLocaleString() + '원';
 }
 
 export default function FilterSidebar({

@@ -190,7 +190,7 @@ export default function SearchBar({ onSearch, isLoading, compact = false }: Prop
       {showDropdown && (
         <div
           ref={dropdownRef}
-          className="absolute top-full mt-2 left-0 right-0 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden"
+          className="absolute top-full mt-2 left-0 right-0 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden text-left"
         >
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-50">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">최근 검색</span>

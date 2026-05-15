@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import SearchBar, { saveRecentSearch } from '@/components/SearchBar';
+import { getCached, setCached } from '@/lib/searchCache';
 import ProductCard from '@/components/ProductCard';
 import SkeletonCard from '@/components/SkeletonCard';
 import SearchProgressBanner from '@/components/SearchProgressBanner';
@@ -40,9 +41,16 @@ function calcStats(products: Product[]): PriceStats | null {
 }
 
 function fmt(n: number) {
-  return n >= 10000
-    ? (n / 10000).toFixed(n % 10000 === 0 ? 0 : 1) + '만원'
-    : n.toLocaleString() + '원';
+  if (n >= 100_000_000) {
+    const eok = Math.floor(n / 100_000_000);
+    const man = Math.round((n % 100_000_000) / 10_000);
+    return man > 0 ? `${eok}억 ${man}만원` : `${eok}억원`;
+  }
+  if (n >= 10_000) {
+    const man = n / 10_000;
+    return (Number.isInteger(man) ? man : man.toFixed(1)) + '만원';
+  }
+  return n.toLocaleString() + '원';
 }
 
 // ─── 플랫폼 상태 표시 (항상 렌더링 — 레이아웃 시프트 방지) ──────
@@ -192,7 +200,10 @@ function MobileFilterBar({
       {open && (
         <div className="fixed inset-0 z-50 flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setOpen(false)} />
-          <div className="relative bg-white rounded-t-3xl px-5 pt-4 pb-8 space-y-5 animate-fadeIn">
+          <div
+            className="relative bg-white rounded-t-3xl px-5 pt-4 space-y-5 animate-slideUp"
+            style={{ paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))' }}
+          >
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-2" />
 
             {/* 플랫폼 */}
@@ -351,34 +362,65 @@ function HomePageInner() {
   const runSearch = useCallback(async (keyword: string) => {
     if (!keyword.trim()) return;
     window.scrollTo({ top: 0, behavior: 'instant' });
-    setIsLoading(true);
     setCurrentKeyword(keyword);
     setFilter({ platform: 'all', sort: 'latest', priceMin: 0, priceMax: 0 });
-    setBunjangProducts([]);
-    setJoongnaProducts([]);
-    setBunjangDone(false);
-    setJoongnaDone(false);
     setBunjangFailed(false);
     setJoongnaFailed(false);
 
     const body = JSON.stringify({ keyword });
     const headers = { 'Content-Type': 'application/json' };
 
+    // 캐시 히트: 즉시 표시 → 백그라운드 리페칭
+    const cached = getCached(keyword);
+    if (cached) {
+      setBunjangProducts(cached.bunjang);
+      setJoongnaProducts(cached.joongna);
+      setBunjangDone(true);
+      setJoongnaDone(true);
+      setIsLoading(false);
+      saveRecentSearch(keyword);
+
+      let freshBunjang = cached.bunjang;
+      let freshJoongna = cached.joongna;
+
+      const bg1 = fetch('/api/search/bunjang', { method: 'POST', headers, body })
+        .then((r) => r.json())
+        .then((data) => { freshBunjang = data.results ?? []; setBunjangProducts(freshBunjang); })
+        .catch(() => {});
+      const bg2 = fetch('/api/search/joongna', { method: 'POST', headers, body })
+        .then((r) => r.json())
+        .then((data) => { freshJoongna = data.results ?? []; setJoongnaProducts(freshJoongna); })
+        .catch(() => {});
+
+      Promise.all([bg1, bg2]).then(() => setCached(keyword, freshBunjang, freshJoongna));
+      return;
+    }
+
+    // 캐시 미스: 일반 로딩
+    setIsLoading(true);
+    setBunjangProducts([]);
+    setJoongnaProducts([]);
+    setBunjangDone(false);
+    setJoongnaDone(false);
+
+    let bunjangResult: Product[] = [];
+    let joongnaResult: Product[] = [];
+
     const fetchBunjang = fetch('/api/search/bunjang', { method: 'POST', headers, body })
       .then((r) => r.json())
-      .then((data) => setBunjangProducts(data.results ?? []))
+      .then((data) => { bunjangResult = data.results ?? []; setBunjangProducts(bunjangResult); })
       .catch(() => setBunjangFailed(true))
       .finally(() => setBunjangDone(true));
 
     const fetchJoongna = fetch('/api/search/joongna', { method: 'POST', headers, body })
       .then((r) => r.json())
-      .then((data) => setJoongnaProducts(data.results ?? []))
+      .then((data) => { joongnaResult = data.results ?? []; setJoongnaProducts(joongnaResult); })
       .catch(() => setJoongnaFailed(true))
       .finally(() => setJoongnaDone(true));
 
     await Promise.all([fetchBunjang, fetchJoongna]);
+    setCached(keyword, bunjangResult, joongnaResult);
     saveRecentSearch(keyword);
-    // 배너에 "검색 완료!" 잠깐 보여준 뒤 결과만 표시
     await new Promise((r) => setTimeout(r, 900));
     setIsLoading(false);
   }, []);
