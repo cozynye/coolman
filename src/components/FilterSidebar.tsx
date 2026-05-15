@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import type { FilterState, SortOption, PriceStats } from '@/lib/types';
 
 interface Props {
@@ -48,6 +49,22 @@ export default function FilterSidebar({
   stats,
   isLoading,
 }: Props) {
+  const [localMin, setLocalMin] = useState(filter.priceMin ? String(filter.priceMin) : '');
+  const [localMax, setLocalMax] = useState(filter.priceMax ? String(filter.priceMax) : '');
+
+  // 프리셋 클릭 시 입력 필드 초기화
+  useEffect(() => {
+    setLocalMin(filter.priceMin ? String(filter.priceMin) : '');
+    setLocalMax(filter.priceMax ? String(filter.priceMax) : '');
+  }, [filter.priceMin, filter.priceMax]);
+
+  function applyPriceInput() {
+    onChange({
+      priceMin: Number(localMin) || 0,
+      priceMax: Number(localMax) || 0,
+    });
+  }
+
   const activePreset = PRICE_PRESETS.find(
     (p) => p.min === filter.priceMin && p.max === filter.priceMax
   );
@@ -158,22 +175,32 @@ export default function FilterSidebar({
             </button>
           ))}
         </div>
-        <div className="mt-3 flex items-center gap-1.5">
-          <input
-            type="number"
-            placeholder="최소"
-            value={filter.priceMin || ''}
-            onChange={(e) => onChange({ priceMin: Number(e.target.value) || 0 })}
-            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-teal-400"
-          />
-          <span className="text-gray-300 text-xs shrink-0">~</span>
-          <input
-            type="number"
-            placeholder="최대"
-            value={filter.priceMax || ''}
-            onChange={(e) => onChange({ priceMax: Number(e.target.value) || 0 })}
-            className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-teal-400"
-          />
+        <div className="mt-3 space-y-2">
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              placeholder="최소"
+              value={localMin}
+              onChange={(e) => setLocalMin(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && applyPriceInput()}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-teal-400"
+            />
+            <span className="text-gray-300 text-xs shrink-0">~</span>
+            <input
+              type="number"
+              placeholder="최대"
+              value={localMax}
+              onChange={(e) => setLocalMax(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && applyPriceInput()}
+              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-teal-400"
+            />
+          </div>
+          <button
+            onClick={applyPriceInput}
+            className="w-full py-1.5 text-xs font-medium bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+          >
+            적용
+          </button>
         </div>
       </div>
     </aside>
