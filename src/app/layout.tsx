@@ -24,6 +24,22 @@ export const metadata: Metadata = {
   },
 };
 
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: '중고모아',
+  url: 'https://coolman-junggo.vercel.app',
+  description: '중고나라와 번개장터를 한 번에 검색하는 중고거래 통합 검색 서비스',
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: 'https://coolman-junggo.vercel.app/?q={search_term_string}',
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
@@ -34,6 +50,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         <meta name="naver-site-verification" content="95999fdf14487df03a3504bd75303740c3d1fb2b" />
         <meta name="google-site-verification" content="mJkJTBBd_7dbU9mLZXwirvRk_8r34RENokY5OZPTz4A" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </head>
       <body className="min-h-screen bg-gray-50 text-gray-900">{children}</body>
     </html>

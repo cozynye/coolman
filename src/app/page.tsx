@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import SearchBar, { saveRecentSearch } from '@/components/SearchBar';
+import Logo from '@/components/Logo';
 import { getCached, setCached } from '@/lib/searchCache';
 import ProductCard from '@/components/ProductCard';
 import SkeletonCard from '@/components/SkeletonCard';
@@ -291,9 +292,12 @@ function Hero({ onSearch, isLoading }: { onSearch: (kw: string) => void; isLoadi
   return (
     <main className="flex flex-col items-center justify-center min-h-[80dvh] px-4">
       <div className="w-full max-w-xl space-y-6 text-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">중고모아</h1>
-          <p className="text-gray-500 text-base">번개장터와 중고나라, 한 번에 비교하세요</p>
+        <div className="flex flex-col items-center gap-3">
+          <Logo size={56} />
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-1">중고모아</h1>
+            <p className="text-gray-500 text-base">번개장터와 중고나라, 한 번에 비교하세요</p>
+          </div>
         </div>
         <SearchBar onSearch={onSearch} isLoading={isLoading} />
         <p className="text-xs text-gray-400">
@@ -432,6 +436,15 @@ function HomePageInner() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 동적 document.title (검색어 반영 → Google 검색 결과 title 개선)
+  useEffect(() => {
+    if (currentKeyword) {
+      document.title = `${currentKeyword} 중고 | 번개장터·중고나라 통합검색 - 중고모아`;
+    } else {
+      document.title = '중고모아 - 중고나라 × 번개장터 통합 검색';
+    }
+  }, [currentKeyword]);
+
   const handleSearch = useCallback((keyword: string) => {
     if (!keyword.trim()) return;
     // URL 업데이트 (리렌더 없이 URL 바만 변경, 뒤로가기 지원)
@@ -466,9 +479,10 @@ function HomePageInner() {
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-4">
           <button
             onClick={() => { setBunjangProducts([]); setJoongnaProducts([]); setCurrentKeyword(''); window.history.pushState({}, '', '/'); }}
-            className="text-gray-900 font-bold text-sm sm:text-lg shrink-0 hover:text-teal-600 transition-colors"
+            className="flex items-center gap-2 shrink-0 hover:opacity-80 transition-opacity"
           >
-            중고모아
+            <Logo size={26} />
+            <span className="text-gray-900 font-bold text-sm sm:text-base">중고모아</span>
           </button>
           <div className="flex-1 max-w-2xl">
             <SearchBar onSearch={handleSearch} isLoading={isLoading} compact />
