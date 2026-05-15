@@ -45,26 +45,36 @@ function fmt(n: number) {
     : n.toLocaleString() + '원';
 }
 
-// ─── 플랫폼 상태 표시 ─────────────────────────────────────────────
+// ─── 플랫폼 상태 표시 (항상 렌더링 — 레이아웃 시프트 방지) ──────
 function PlatformStatusBar({
   meta,
   bunjangCount,
   joongnaCount,
+  bunjangDone,
+  joongnaDone,
 }: {
   meta: { bunjang: 'success' | 'failed'; joonggo: 'success' | 'failed' };
   bunjangCount: number;
   joongnaCount: number;
+  bunjangDone: boolean;
+  joongnaDone: boolean;
 }) {
   return (
     <div className="flex items-center gap-4 text-sm text-gray-500">
       <span className="flex items-center gap-1.5">
         <span className="inline-block w-2 h-2 rounded-full bg-red-400" />
-        번개장터 {meta.bunjang === 'failed' ? '실패' : `${bunjangCount}개`}
+        번개장터{' '}
+        {!bunjangDone
+          ? <span className="text-gray-300 tracking-widest">···</span>
+          : meta.bunjang === 'failed' ? '실패' : `${bunjangCount.toLocaleString()}개`}
       </span>
       <span className="text-gray-200">|</span>
       <span className="flex items-center gap-1.5">
         <span className="inline-block w-2 h-2 rounded-full bg-teal-400" />
-        중고나라 {meta.joonggo === 'failed' ? '실패' : `${joongnaCount}개`}
+        중고나라{' '}
+        {!joongnaDone
+          ? <span className="text-gray-300 tracking-widest">···</span>
+          : meta.joonggo === 'failed' ? '실패' : `${joongnaCount.toLocaleString()}개`}
       </span>
     </div>
   );
@@ -445,16 +455,16 @@ function HomePageInner() {
                 </span>
               )}
             </h2>
-            {!isLoading && (
-              <PlatformStatusBar
-                meta={{
-                  bunjang: bunjangFailed ? 'failed' : 'success',
-                  joonggo: joongnaFailed ? 'failed' : 'success',
-                }}
-                bunjangCount={bunjangCount}
-                joongnaCount={joongnaCount}
-              />
-            )}
+            <PlatformStatusBar
+              meta={{
+                bunjang: bunjangFailed ? 'failed' : 'success',
+                joonggo: joongnaFailed ? 'failed' : 'success',
+              }}
+              bunjangCount={bunjangCount}
+              joongnaCount={joongnaCount}
+              bunjangDone={bunjangDone}
+              joongnaDone={joongnaDone}
+            />
           </div>
 
           {/* 뷰 사이즈 토글 + 공유 */}
@@ -512,19 +522,18 @@ function HomePageInner() {
           </div>
         </div>
 
-        {/* 진행률 배너 — 검색 중·완료 양쪽에 항상 표시 (레이아웃 시프트 없음) */}
+        {/* 진행률 배너 — 로딩 중에만 표시, 완료 후 collapse */}
         <SearchProgressBanner
           isLoading={isLoading}
           bunjangDone={bunjangDone}
           joongnaDone={joongnaDone}
           bunjangCount={bunjangCount}
           joongnaCount={joongnaCount}
-          stats={stats}
         />
 
 
         {/* 모바일 필터 칩 바 */}
-        <div className="md:hidden mb-4">
+        <div className="md:hidden mb-4 space-y-2.5">
           <MobileFilterBar
             filter={filter}
             onChange={handleFilterChange}
@@ -532,6 +541,16 @@ function HomePageInner() {
             bunjangCount={bunjangCount}
             joongnaCount={joongnaCount}
           />
+          {/* 모바일 가격 인사이트 strip */}
+          {stats && (
+            <div className="flex items-center gap-3 text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2">
+              <span>최저 <span className="font-semibold text-blue-500">{fmt(stats.min)}</span></span>
+              <span className="text-gray-200">·</span>
+              <span>평균 <span className="font-semibold text-teal-600">{fmt(stats.avg)}</span></span>
+              <span className="text-gray-200">·</span>
+              <span>최고 <span className="font-semibold text-gray-700">{fmt(stats.max)}</span></span>
+            </div>
+          )}
         </div>
 
         {/* 사이드바 + 그리드 레이아웃 */}
@@ -544,6 +563,8 @@ function HomePageInner() {
               totalCount={allProducts.length}
               bunjangCount={bunjangCount}
               joongnaCount={joongnaCount}
+              stats={stats}
+              isLoading={isLoading}
             />
           </div>
 

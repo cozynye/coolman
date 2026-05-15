@@ -1,6 +1,6 @@
 'use client';
 
-import type { FilterState, SortOption } from '@/lib/types';
+import type { FilterState, SortOption, PriceStats } from '@/lib/types';
 
 interface Props {
   filter: FilterState;
@@ -8,6 +8,8 @@ interface Props {
   totalCount: number;
   bunjangCount: number;
   joongnaCount: number;
+  stats: PriceStats | null;
+  isLoading?: boolean;
 }
 
 const PRICE_PRESETS = [
@@ -24,19 +26,56 @@ const SORTS: { value: SortOption; label: string }[] = [
   { value: 'price-desc', label: '높은가격순' },
 ];
 
+function fmt(n: number) {
+  return n >= 10000
+    ? (n / 10000).toFixed(n % 10000 === 0 ? 0 : 1) + '만원'
+    : n.toLocaleString() + '원';
+}
+
 export default function FilterSidebar({
   filter,
   onChange,
   totalCount,
   bunjangCount,
   joongnaCount,
+  stats,
+  isLoading,
 }: Props) {
   const activePreset = PRICE_PRESETS.find(
     (p) => p.min === filter.priceMin && p.max === filter.priceMax
   );
 
   return (
-    <aside className="w-52 shrink-0 space-y-6">
+    <aside className="w-52 shrink-0 space-y-5">
+      {/* 가격 인사이트 */}
+      {(stats || isLoading) && (
+        <div className="bg-gray-50 rounded-xl p-3.5 space-y-2.5">
+          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            가격 인사이트
+          </h3>
+          {isLoading && !stats ? (
+            <div className="space-y-2">
+              <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+              <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+              <div className="h-3 bg-gray-200 rounded animate-pulse w-2/3" />
+            </div>
+          ) : stats ? (
+            <div className="space-y-2">
+              {[
+                { label: '최저가', value: fmt(stats.min), color: 'text-blue-500' },
+                { label: '평균가', value: fmt(stats.avg), color: 'text-teal-600' },
+                { label: '최고가', value: fmt(stats.max), color: 'text-gray-700' },
+              ].map((s) => (
+                <div key={s.label} className="flex items-center justify-between">
+                  <span className="text-xs text-gray-400">{s.label}</span>
+                  <span className={`text-xs font-semibold ${s.color}`}>{s.value}</span>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      )}
+
       {/* 플랫폼 */}
       <div>
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
@@ -112,7 +151,6 @@ export default function FilterSidebar({
             </button>
           ))}
         </div>
-        {/* 직접 입력 */}
         <div className="mt-3 flex items-center gap-1.5">
           <input
             type="number"
