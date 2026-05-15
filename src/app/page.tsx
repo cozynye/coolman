@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import SearchBar, { saveRecentSearch } from '@/components/SearchBar';
 import ProductCard from '@/components/ProductCard';
 import FilterSidebar from '@/components/FilterSidebar';
@@ -222,8 +223,10 @@ function ResultGrid({ products, size }: { products: Product[]; size: 'large' | '
   );
 }
 
-// ─── 메인 컴포넌트 ────────────────────────────────────────────────
-export default function HomePage() {
+// ─── 메인 컴포넌트 (useSearchParams 사용 → Suspense 필요) ─────────
+function HomePageInner() {
+  const searchParams = useSearchParams();
+
   const [searchResult, setSearchResult] = useState<SearchResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [currentKeyword, setCurrentKeyword] = useState('');
@@ -235,7 +238,7 @@ export default function HomePage() {
     priceMax: 0,
   });
 
-  const handleSearch = useCallback(async (keyword: string) => {
+  const runSearch = useCallback(async (keyword: string) => {
     if (!keyword.trim()) return;
     setIsLoading(true);
     setCurrentKeyword(keyword);
@@ -257,6 +260,20 @@ export default function HomePage() {
       setIsLoading(false);
     }
   }, []);
+
+  // URL → 검색: ?q= 파라미터로 바로 검색
+  useEffect(() => {
+    const q = searchParams.get('q');
+    if (q) runSearch(q);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSearch = useCallback((keyword: string) => {
+    if (!keyword.trim()) return;
+    // URL 업데이트 (리렌더 없이 URL 바만 변경, 뒤로가기 지원)
+    window.history.pushState({}, '', `/?q=${encodeURIComponent(keyword.trim())}`);
+    runSearch(keyword);
+  }, [runSearch]);
 
   const handleFilterChange = useCallback((partial: Partial<FilterState>) => {
     setFilter((prev) => ({ ...prev, ...partial }));
@@ -296,7 +313,7 @@ export default function HomePage() {
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-4">
           <button
-            onClick={() => { setSearchResult(null); setCurrentKeyword(''); }}
+            onClick={() => { setSearchResult(null); setCurrentKeyword(''); window.history.pushState({}, '', '/'); }}
             className="text-gray-900 font-bold text-sm sm:text-lg shrink-0 hover:text-teal-600 transition-colors"
           >
             중고모아
@@ -437,5 +454,13 @@ export default function HomePage() {
         />
       </div>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <Suspense>
+      <HomePageInner />
+    </Suspense>
   );
 }
