@@ -202,7 +202,7 @@ export default function SearchBar({ onSearch, isLoading, compact = false }: Prop
               전체 삭제
             </button>
           </div>
-          <ul className="py-1 max-h-64 overflow-y-auto">
+          <ul className="py-1 max-h-48 overflow-y-auto">
             {suggestions.map((kw, i) => (
               <li key={kw}>
                 <div
