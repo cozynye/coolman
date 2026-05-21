@@ -487,12 +487,12 @@ function HomePageInner() {
     <div className="min-h-screen bg-gray-50 animate-fadeIn">
       {/* 헤더 — 모바일: 더 작고 컴팩트, 데스크탑: 여유 있는 높이 */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-[13px] sm:py-3 flex items-center gap-2 sm:gap-3">
           <button
             onClick={() => { setBunjangProducts([]); setJoongnaProducts([]); setCurrentKeyword(''); window.history.pushState({}, '', '/'); }}
             className="flex items-center gap-1.5 shrink-0 hover:opacity-80 transition-opacity"
           >
-            <Logo size={24} />
+            <Logo size={28} />
             {/* 모바일(< 640px)에서 텍스트 숨김 → 로고만 표시해서 검색바 공간 확보 */}
             <span className="hidden sm:block text-gray-900 font-bold text-sm sm:text-base">중고모아</span>
           </button>

@@ -51,14 +51,10 @@ export default function SearchBar({ onSearch, isLoading, compact = false }: Prop
 
   const showDropdown = focused && suggestions.length > 0;
 
-  function updateSuggestions(val: string) {
+  function updateSuggestions() {
     const r = getRecent();
     setRecent(r);
-    if (!val.trim()) {
-      setSuggestions(r);
-    } else {
-      setSuggestions(r.filter((k) => k.toLowerCase().includes(val.toLowerCase())));
-    }
+    setSuggestions(r);
     setFocusedIdx(-1);
   }
 
@@ -100,7 +96,7 @@ export default function SearchBar({ onSearch, isLoading, compact = false }: Prop
   function handleRemove(kw: string, e: React.MouseEvent) {
     e.stopPropagation();
     removeRecent(kw);
-    updateSuggestions(value);
+    updateSuggestions();
   }
 
   return (
@@ -108,7 +104,7 @@ export default function SearchBar({ onSearch, isLoading, compact = false }: Prop
       <div
         className={`flex items-center gap-2 bg-white transition-colors min-w-0 ${
           compact
-            ? 'border rounded-lg px-2.5 py-1'
+            ? 'border rounded-lg px-3 py-1.5'
             : 'border-2 rounded-2xl px-4 py-3 shadow-sm'
         } ${focused
             ? compact ? 'border-teal-400' : 'border-teal-400 shadow-teal-100 shadow-md'
@@ -136,11 +132,11 @@ export default function SearchBar({ onSearch, isLoading, compact = false }: Prop
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
-            updateSuggestions(e.target.value);
+            updateSuggestions();
           }}
           onFocus={() => {
             setFocused(true);
-            updateSuggestions(value);
+            updateSuggestions();
           }}
           onBlur={() => setTimeout(() => setFocused(false), 150)}
           onKeyDown={handleKeyDown}
