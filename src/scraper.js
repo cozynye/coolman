@@ -171,7 +171,9 @@ class Scraper {
 
                 const image = $img.attr('src') || '';
                 const textContent = $el.text();
-                const priceMatch = textContent.match(/([\d,]+)원/);
+                // 쉼표로 구분된 정규 가격 형식만 매칭 (제목 끝 숫자가 앞에 붙는 오염 방지)
+                const priceMatch = textContent.match(/\b(\d{1,3}(?:,\d{3})+)원/) ||
+                                   textContent.match(/\b([1-9]\d{0,5})원/);
                 const price = priceMatch ? priceMatch[1] + '원' : '가격문의';
 
                 // 페이지 순서 + 인덱스로 상대 타임스탬프 부여
