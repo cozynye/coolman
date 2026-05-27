@@ -42,9 +42,13 @@ async function fetchPage(keyword: string, page: number): Promise<(Product & { _s
 
       const image = $img.attr('src') ?? '';
       const rawText = $el.text();
-      // "YYYY/MM" 날짜 패턴이 가격 앞에 바로 붙어 숫자가 오염되는 버그 방지
-      // 예: "2026/11" + "5,200,000원" → "2026/115,200,000원" → 115,200,000 오파싱
-      const textForPrice = rawText.replace(/\d{4}\/\d{1,2}/g, ' ');
+
+      // 제목을 제거한 텍스트에서 가격 찾기 (제목 끝 모델번호/숫자 오염 방지)
+      // 예: 제목 "브라이틀링 A23322" + 가격 "233만원" → "A23322233" 오파싱 방지
+      const textWithoutTitle = rawText.replace(title, '');
+
+      // "YYYY/MM" 날짜 패턴도 제거 (가격 앞 날짜 오염 방지)
+      const textForPrice = textWithoutTitle.replace(/\d{4}\/\d{1,2}/g, ' ');
       const priceMatch = textForPrice.match(/([\d,]+)원/);
       const priceNum = priceMatch ? parseInt(priceMatch[1].replace(/,/g, ''), 10) : 0;
       const priceStr = priceNum > 0 ? priceNum.toLocaleString('ko-KR') + '원' : '가격문의';
