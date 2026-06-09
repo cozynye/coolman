@@ -1,102 +1,116 @@
 'use client';
 
-import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { useState, useRef, useEffect, useMemo, useSyncExternalStore, KeyboardEvent } from 'react';
+import { recentStore } from '@/lib/recentStore';
+import { TRENDING_KEYWORDS } from '@/lib/popularKeywords';
 
 interface Props {
   onSearch: (keyword: string) => void;
   isLoading: boolean;
   compact?: boolean;
+  initialValue?: string;
 }
 
-const RECENT_KEY = 'junggo_recent_v2';
-const MAX_RECENT = 10;
-
-function getRecent(): string[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    return JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
-  } catch {
-    return [];
-  }
-}
-
-function saveRecent(keyword: string) {
-  const prev = getRecent().filter((k) => k !== keyword);
-  localStorage.setItem(RECENT_KEY, JSON.stringify([keyword, ...prev].slice(0, MAX_RECENT)));
-}
-
-function removeRecent(keyword: string) {
-  localStorage.setItem(
-    RECENT_KEY,
-    JSON.stringify(getRecent().filter((k) => k !== keyword))
-  );
-}
-
+// page.tsx가 검색 시 recentStore.save를 호출하므로 외부에서도 쓸 수 있게 재노출(호환).
 export function saveRecentSearch(keyword: string) {
-  saveRecent(keyword);
+  recentStore.save(keyword);
 }
 
-export default function SearchBar({ onSearch, isLoading, compact = false }: Props) {
-  const [value, setValue] = useState('');
-  const [recent, setRecent] = useState<string[]>([]);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [focused, setFocused] = useState(false);
-  const [focusedIdx, setFocusedIdx] = useState(-1);
+export default function SearchBar({ onSearch, isLoading, compact = false, initialValue = '' }: Props) {
+  const [value, setValue] = useState(initialValue);
+  const [open, setOpen] = useState(false);
+  // typed: 사용자가 포커스 이후 직접 입력했는지. 검색 후 채워진 값(=현재 검색어)으로
+  //        목록을 필터링하지 않기 위함 — 포커스 시엔 항상 전체 최근검색어를 보여준다.
+  const [typed, setTyped] = useState(false);
+  const [activeIdx, setActiveIdx] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const blurTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    setRecent(getRecent());
+  // 최근검색어는 외부 스토어 구독 → 모든 SearchBar 인스턴스(Hero/헤더)가 자동 동기화
+  const recent = useSyncExternalStore(
+    recentStore.subscribe,
+    recentStore.getSnapshot,
+    recentStore.getServerSnapshot,
+  );
+
+  // blurTimer 정리(언마운트)
+  useEffect(() => () => {
+    if (blurTimer.current) clearTimeout(blurTimer.current);
   }, []);
 
-  const showDropdown = focused && suggestions.length > 0;
+  // 표시 목록: 입력 중이면 입력값으로 필터(히스토리 자동완성),
+  //            아니면 최근검색어 → 없으면 인기검색어 fallback(신규 사용자 진입점)
+  const list = useMemo(() => {
+    const q = value.trim().toLowerCase();
+    if (typed && q) {
+      return recent.filter((k) => k.toLowerCase().includes(q) && k.toLowerCase() !== q);
+    }
+    return recent.length ? recent : TRENDING_KEYWORDS;
+  }, [recent, value, typed]);
 
-  function updateSuggestions() {
-    const r = getRecent();
-    setRecent(r);
-    setSuggestions(r);
-    setFocusedIdx(-1);
+  // 최근검색이 없어 인기검색어를 보여주는 상태(삭제 불가)
+  const showingPopular = !(typed && value.trim()) && recent.length === 0;
+  const showDropdown = open && list.length > 0;
+
+  // 드롭다운 열기 — onFocus + onPointerDown 양쪽에서 호출.
+  // 이미 DOM 포커스된 input을 다시 탭하면 focus 이벤트가 안 뜨므로 pointerdown으로 보강한다.
+  function openDropdown() {
+    if (blurTimer.current) {
+      clearTimeout(blurTimer.current);
+      blurTimer.current = null;
+    }
+    setTyped(false);
+    setActiveIdx(-1);
+    setOpen(true);
+  }
+
+  function closeDropdown() {
+    setOpen(false);
+    setActiveIdx(-1);
   }
 
   function handleSearch(kw?: string) {
     const keyword = (kw ?? value).trim();
     if (!keyword) return;
-    saveRecent(keyword);
     setValue(keyword);
-    setSuggestions([]);
-    setFocused(false);
-    onSearch(keyword);
+    setTyped(false);
+    closeDropdown();
+    if (blurTimer.current) clearTimeout(blurTimer.current);
+    // DOM 포커스 해제: 모바일 키보드 내림 + 다음 탭에서 focus 이벤트 재발생 보장(버그 ① 방지)
+    inputRef.current?.blur();
+    onSearch(keyword); // 최근검색 저장은 page.tsx의 keyword effect가 담당
+  }
+
+  function handleRemove(kw: string) {
+    recentStore.remove(kw);
+    setActiveIdx(-1);
+    // X 탭 시 preventDefault로 input 포커스 유지 → 드롭다운 유지하며 즉시 다음 항목 삭제 가능
+    inputRef.current?.focus();
+  }
+
+  function clearAll() {
+    recentStore.clear();
+    setActiveIdx(-1);
+    inputRef.current?.focus();
   }
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setFocusedIdx((i) => Math.min(i + 1, suggestions.length - 1));
+      setOpen(true);
+      setActiveIdx((i) => Math.min(i + 1, list.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setFocusedIdx((i) => Math.max(i - 1, -1));
+      setActiveIdx((i) => Math.max(i - 1, -1));
     } else if (e.key === 'Escape') {
-      setSuggestions([]);
-      setFocused(false);
+      closeDropdown();
     } else if (e.key === 'Enter') {
-      if (focusedIdx >= 0 && suggestions[focusedIdx]) {
-        handleSearch(suggestions[focusedIdx]);
+      if (activeIdx >= 0 && list[activeIdx]) {
+        handleSearch(list[activeIdx]);
       } else {
         handleSearch();
       }
     }
-  }
-
-  function clearAll() {
-    localStorage.removeItem(RECENT_KEY);
-    setRecent([]);
-    setSuggestions([]);
-  }
-
-  function handleRemove(kw: string, e: React.MouseEvent) {
-    e.stopPropagation();
-    removeRecent(kw);
-    updateSuggestions();
   }
 
   return (
@@ -104,9 +118,9 @@ export default function SearchBar({ onSearch, isLoading, compact = false }: Prop
       <div
         className={`flex items-center gap-2 bg-white transition-colors min-w-0 ${
           compact
-            ? 'border rounded-lg px-3 py-1.5'
+            ? 'border rounded-lg px-3 py-2'
             : 'border-2 rounded-2xl px-4 py-3 shadow-sm'
-        } ${focused
+        } ${open
             ? compact ? 'border-teal-400' : 'border-teal-400 shadow-teal-100 shadow-md'
             : compact ? 'border-gray-200' : 'border-gray-100'
         }`}
@@ -128,33 +142,44 @@ export default function SearchBar({ onSearch, isLoading, compact = false }: Prop
 
         <input
           ref={inputRef}
-          type="text"
+          type="search"
+          inputMode="search"
+          enterKeyHint="search"
           value={value}
           onChange={(e) => {
             setValue(e.target.value);
-            updateSuggestions();
+            setTyped(true);
+            setActiveIdx(-1);
+            setOpen(true);
           }}
-          onFocus={() => {
-            setFocused(true);
-            updateSuggestions();
+          onFocus={openDropdown}
+          onPointerDown={openDropdown}
+          onBlur={() => {
+            blurTimer.current = setTimeout(() => setOpen(false), 150);
           }}
-          onBlur={() => setTimeout(() => setFocused(false), 150)}
           onKeyDown={handleKeyDown}
           placeholder="찾으시는 상품을 입력하세요"
-          className={`flex-1 min-w-0 outline-none text-gray-800 placeholder-gray-400 bg-transparent ${compact ? 'text-sm' : 'text-base'}`}
+          className={`flex-1 min-w-0 outline-none text-gray-800 placeholder-gray-400 bg-transparent [&::-webkit-search-cancel-button]:hidden ${compact ? 'text-sm' : 'text-base'}`}
           autoComplete="off"
+          role="combobox"
+          aria-expanded={showDropdown}
+          aria-autocomplete="list"
+          aria-label="상품 검색"
           style={{ fontSize: '16px' }} // iOS 줌 방지
         />
 
         {value && (
           <button
             type="button"
+            aria-label="검색어 지우기"
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
               setValue('');
-              setSuggestions(recent);
+              setTyped(false);
+              setOpen(true);
               inputRef.current?.focus();
             }}
-            className="text-gray-300 hover:text-gray-500 transition-colors"
+            className="text-gray-300 hover:text-gray-500 transition-colors shrink-0"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -182,47 +207,69 @@ export default function SearchBar({ onSearch, isLoading, compact = false }: Prop
         </button>
       </div>
 
-      {/* 자동완성 드롭다운 */}
+      {/* 최근 검색 / 히스토리 자동완성 드롭다운 */}
       {showDropdown && (
         <div
-          ref={dropdownRef}
           className="absolute top-full mt-2 left-0 right-0 bg-white border border-gray-100 rounded-2xl shadow-xl z-50 overflow-hidden text-left"
         >
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-50">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">최근 검색</span>
-            <button
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={clearAll}
-              className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              전체 삭제
-            </button>
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+              {showingPopular ? '인기 검색어' : typed && value.trim() ? '관련 최근 검색' : '최근 검색'}
+            </span>
+            {!showingPopular && (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={clearAll}
+                className="text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1 -mr-2"
+              >
+                전체 삭제
+              </button>
+            )}
           </div>
-          <ul className="py-1 max-h-48 overflow-y-auto">
-            {suggestions.map((kw, i) => (
-              <li key={kw}>
-                <div
-                  className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
-                    i === focusedIdx ? 'bg-teal-50' : 'hover:bg-gray-50'
-                  }`}
+          <ul className="py-1 max-h-[min(50vh,420px)] overflow-y-auto overscroll-contain">
+            {list.map((kw, i) => (
+              <li
+                key={kw}
+                className={`flex items-center transition-colors ${i === activeIdx ? 'bg-teal-50' : ''}`}
+              >
+                {/* 검색 버튼 (행 전체) — 삭제 버튼과 형제로 분리해 탭 충돌 제거 */}
+                <button
+                  type="button"
                   onMouseDown={(e) => {
                     e.preventDefault();
                     handleSearch(kw);
                   }}
+                  className="flex-1 min-w-0 flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
                 >
-                  <svg className="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="flex-1 text-left text-sm text-gray-700">{kw}</span>
+                  {showingPopular ? (
+                    <svg className="w-3.5 h-3.5 text-teal-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  ) : (
+                    <svg className="w-3.5 h-3.5 text-gray-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  )}
+                  <span className="flex-1 min-w-0 truncate text-sm text-gray-700">{kw}</span>
+                </button>
+                {/* 삭제 버튼 — 넉넉한 터치 타깃(≈44px), 검색 트리거와 완전 분리. 인기검색어는 삭제 불가 */}
+                {!showingPopular && (
                   <button
-                    onMouseDown={(e) => handleRemove(kw, e)}
-                    className="text-gray-300 hover:text-gray-500 p-0.5"
+                    type="button"
+                    aria-label={`'${kw}' 검색어 삭제`}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleRemove(kw);
+                    }}
+                    className="shrink-0 flex items-center justify-center w-11 h-11 text-gray-300 hover:text-gray-600 active:text-gray-700 transition-colors"
                   >
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
-                </div>
+                )}
               </li>
             ))}
           </ul>

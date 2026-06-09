@@ -19,15 +19,14 @@ export default function SearchProgressBanner({
 }: Props) {
   const [visible, setVisible] = useState(true);
 
+  // 로딩 시작 → 표시, 로딩 종료 → 1.2초 후 collapse (단일 effect)
   useEffect(() => {
-    if (isLoading) setVisible(true);
-  }, [isLoading]);
-
-  useEffect(() => {
-    if (!isLoading) {
-      const t = setTimeout(() => setVisible(false), 1200);
-      return () => clearTimeout(t);
+    if (isLoading) {
+      setVisible(true);
+      return;
     }
+    const t = setTimeout(() => setVisible(false), 1200);
+    return () => clearTimeout(t);
   }, [isLoading]);
 
   const doneCount = (bunjangDone ? 1 : 0) + (joongnaDone ? 1 : 0);

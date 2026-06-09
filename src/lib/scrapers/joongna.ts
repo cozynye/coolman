@@ -11,6 +11,18 @@ function formatDate(unixSec: number): string {
   return `${yy}-${mm}-${dd}`;
 }
 
+// 중고나라는 등록일 API/필드를 노출하지 않는다. 다만 이미지 CDN 경로에
+// 업로드(=등록) 날짜가 들어있다. 예: .../media/original/2026/06/06/xxxx.jpg
+// 이를 파싱해 실제 등록일에 근접한 timestamp를 얻는다. 못 찾으면 null.
+function parseListedDateFromImage(imageUrl: string): number | null {
+  const m = imageUrl.match(/\/(20\d{2})\/(\d{2})\/(\d{2})\//);
+  if (!m) return null;
+  const [, y, mo, d] = m;
+  const ts = Date.UTC(Number(y), Number(mo) - 1, Number(d)) / 1000;
+  if (!isFinite(ts) || ts <= 0) return null;
+  return Math.floor(ts);
+}
+
 async function fetchPage(keyword: string, page: number): Promise<(Product & { _seq: string })[]> {
   try {
     const url = `${CONFIG.JOONGNA_BASE_URL}/search/${encodeURIComponent(keyword)}?keywordSource=INPUT_KEYWORD&page=${page}`;
@@ -53,7 +65,9 @@ async function fetchPage(keyword: string, page: number): Promise<(Product & { _s
       const priceNum = priceMatch ? parseInt(priceMatch[1].replace(/,/g, ''), 10) : 0;
       const priceStr = priceNum > 0 ? priceNum.toLocaleString('ko-KR') + '원' : '가격문의';
 
-      const ts = baseTs - ((page - 1) * 100 + i);
+      // 실제 등록일(이미지 경로) 우선, 없으면 정렬용 순번 타임스탬프(표시는 안 함)
+      const listedTs = parseListedDateFromImage(image);
+      const ts = listedTs ?? baseTs - ((page - 1) * 100 + i);
 
       results.push({
         _seq: seq,
@@ -62,7 +76,8 @@ async function fetchPage(keyword: string, page: number): Promise<(Product & { _s
         price: priceStr,
         priceNum,
         link: `${CONFIG.JOONGNA_BASE_URL}/product/${seq}`,
-        update_time: formatDate(ts),
+        // update_time: 실제 날짜를 알 때만 채운다('' = 미상 → 카드에서 날짜 숨김)
+        update_time: listedTs ? formatDate(listedTs) : '',
         timestamp: ts,
         status: '판매중',
         image,

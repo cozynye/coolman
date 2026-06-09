@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { FilterState, SortOption, PriceStats } from '@/lib/types';
 
 interface Props {
@@ -40,6 +40,56 @@ function fmt(n: number) {
   return n.toLocaleString() + '원';
 }
 
+// 가격 직접입력 — draft 값을 자체 보유하고 '적용' 시에만 onApply.
+// 프리셋 등 외부 변경 시 부모가 key를 바꿔 리마운트시키므로 props→state 동기화 effect가 필요 없다.
+function PriceInputs({
+  initialMin,
+  initialMax,
+  onApply,
+}: {
+  initialMin: number;
+  initialMax: number;
+  onApply: (min: number, max: number) => void;
+}) {
+  const [min, setMin] = useState(initialMin ? String(initialMin) : '');
+  const [max, setMax] = useState(initialMax ? String(initialMax) : '');
+  const apply = () => onApply(Number(min) || 0, Number(max) || 0);
+
+  return (
+    <div className="mt-3 space-y-2">
+      <div className="flex items-center gap-1.5">
+        <input
+          type="number"
+          inputMode="numeric"
+          placeholder="최소"
+          value={min}
+          onChange={(e) => setMin(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && apply()}
+          aria-label="최소 가격"
+          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-teal-400"
+        />
+        <span className="text-gray-300 text-xs shrink-0">~</span>
+        <input
+          type="number"
+          inputMode="numeric"
+          placeholder="최대"
+          value={max}
+          onChange={(e) => setMax(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && apply()}
+          aria-label="최대 가격"
+          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-teal-400"
+        />
+      </div>
+      <button
+        onClick={apply}
+        className="w-full py-1.5 text-xs font-medium bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+      >
+        적용
+      </button>
+    </div>
+  );
+}
+
 export default function FilterSidebar({
   filter,
   onChange,
@@ -49,22 +99,6 @@ export default function FilterSidebar({
   stats,
   isLoading,
 }: Props) {
-  const [localMin, setLocalMin] = useState(filter.priceMin ? String(filter.priceMin) : '');
-  const [localMax, setLocalMax] = useState(filter.priceMax ? String(filter.priceMax) : '');
-
-  // 프리셋 클릭 시 입력 필드 초기화
-  useEffect(() => {
-    setLocalMin(filter.priceMin ? String(filter.priceMin) : '');
-    setLocalMax(filter.priceMax ? String(filter.priceMax) : '');
-  }, [filter.priceMin, filter.priceMax]);
-
-  function applyPriceInput() {
-    onChange({
-      priceMin: Number(localMin) || 0,
-      priceMax: Number(localMax) || 0,
-    });
-  }
-
   const activePreset = PRICE_PRESETS.find(
     (p) => p.min === filter.priceMin && p.max === filter.priceMax
   );
@@ -175,33 +209,13 @@ export default function FilterSidebar({
             </button>
           ))}
         </div>
-        <div className="mt-3 space-y-2">
-          <div className="flex items-center gap-1.5">
-            <input
-              type="number"
-              placeholder="최소"
-              value={localMin}
-              onChange={(e) => setLocalMin(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && applyPriceInput()}
-              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-teal-400"
-            />
-            <span className="text-gray-300 text-xs shrink-0">~</span>
-            <input
-              type="number"
-              placeholder="최대"
-              value={localMax}
-              onChange={(e) => setLocalMax(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && applyPriceInput()}
-              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-teal-400"
-            />
-          </div>
-          <button
-            onClick={applyPriceInput}
-            className="w-full py-1.5 text-xs font-medium bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
-          >
-            적용
-          </button>
-        </div>
+        {/* key로 리마운트 → 프리셋 변경 시 draft가 새 값으로 초기화(동기화 effect 불필요) */}
+        <PriceInputs
+          key={`${filter.priceMin}-${filter.priceMax}`}
+          initialMin={filter.priceMin}
+          initialMax={filter.priceMax}
+          onApply={(min, max) => onChange({ priceMin: min, priceMax: max })}
+        />
       </div>
     </aside>
   );

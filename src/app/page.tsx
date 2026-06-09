@@ -2,9 +2,12 @@
 
 import { useState, useMemo, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import SearchBar, { saveRecentSearch } from '@/components/SearchBar';
+import SearchBar from '@/components/SearchBar';
 import Logo from '@/components/Logo';
-import { getCached, setCached } from '@/lib/searchCache';
+import { recentStore } from '@/lib/recentStore';
+import { bunjangStore, joongnaStore } from '@/lib/platformStore';
+import { usePlatformSearch } from '@/hooks/usePlatformSearch';
+import { TRENDING_KEYWORDS } from '@/lib/popularKeywords';
 import ProductCard from '@/components/ProductCard';
 import SkeletonCard from '@/components/SkeletonCard';
 import SearchProgressBanner from '@/components/SearchProgressBanner';
@@ -311,6 +314,18 @@ function Hero({ onSearch, isLoading }: { onSearch: (kw: string) => void; isLoadi
           </div>
         </div>
         <SearchBar onSearch={onSearch} isLoading={isLoading} />
+        {/* 인기 검색어 — 신규 사용자 진입점 */}
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {TRENDING_KEYWORDS.map((kw) => (
+            <button
+              key={kw}
+              onClick={() => onSearch(kw)}
+              className="px-3 py-1.5 rounded-full bg-white border border-gray-200 text-sm text-gray-600 hover:border-teal-400 hover:text-teal-600 transition-colors"
+            >
+              {kw}
+            </button>
+          ))}
+        </div>
         <p className="text-xs text-gray-400">
           번개장터 · 중고나라를 동시에 검색합니다
         </p>
@@ -329,14 +344,17 @@ function ResultGrid({ products, size }: { products: Product[]; size: 'large' | '
 
   const cols =
     size === 'small'
-      ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6'
-      : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4';
+      ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 2xl:grid-cols-7'
+      : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-5';
+
+  // 첫 줄 카드는 priority(LCP 개선)
+  const eager = size === 'small' ? 6 : 4;
 
   return (
     <div>
-      <div className={`grid ${cols} gap-3`}>
+      <div className={`grid ${cols} gap-3 lg:gap-4`}>
         {visible.map((p, i) => (
-          <ProductCard key={`${p.platform}-${p.link}-${i}`} product={p} size={size} />
+          <ProductCard key={`${p.platform}-${p.link}-${i}`} product={p} size={size} priority={i < eager} />
         ))}
       </div>
       {hasMore && (
@@ -357,16 +375,12 @@ function ResultGrid({ products, size }: { products: Product[]; size: 'large' | '
 // ─── 메인 컴포넌트 (useSearchParams 사용 → Suspense 필요) ─────────
 function HomePageInner() {
   const searchParams = useSearchParams();
+  // URL(?q=)이 검색어의 단일 진실원천(SSOT). 검색·뒤로가기·앞으로가기·공유링크가
+  // 모두 useSearchParams로 수렴한다(Next 라우터가 pushState/popstate를 동기화).
+  const keyword = searchParams.get('q') ?? '';
 
-  const [bunjangProducts, setBunjangProducts] = useState<Product[]>([]);
-  const [joongnaProducts, setJoongnaProducts] = useState<Product[]>([]);
-  const [bunjangDone, setBunjangDone] = useState(false);
-  const [joongnaDone, setJoongnaDone] = useState(false);
-  const [bunjangFailed, setBunjangFailed] = useState(false);
-  const [joongnaFailed, setJoongnaFailed] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [currentKeyword, setCurrentKeyword] = useState('');
   const [cardSize, setCardSize] = useState<'large' | 'small'>('large');
+  const [copied, setCopied] = useState(false);
   const [filter, setFilter] = useState<FilterState>({
     platform: 'all',
     sort: 'latest',
@@ -374,98 +388,59 @@ function HomePageInner() {
     priceMax: 0,
   });
 
-  const runSearch = useCallback(async (keyword: string) => {
-    if (!keyword.trim()) return;
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    setCurrentKeyword(keyword);
-    setFilter({ platform: 'all', sort: 'latest', priceMin: 0, priceMax: 0 });
-    setBunjangFailed(false);
-    setJoongnaFailed(false);
+  // 플랫폼별 데이터는 외부 스토어 구독으로 파생(progressive rendering: 먼저 온 쪽이 즉시 갱신)
+  const bunjang = usePlatformSearch(bunjangStore, keyword);
+  const joongna = usePlatformSearch(joongnaStore, keyword);
 
-    const body = JSON.stringify({ keyword });
-    const headers = { 'Content-Type': 'application/json' };
-
-    // 캐시 히트: 즉시 표시 → 백그라운드 리페칭
-    const cached = getCached(keyword);
-    if (cached) {
-      setBunjangProducts(cached.bunjang);
-      setJoongnaProducts(cached.joongna);
-      setBunjangDone(true);
-      setJoongnaDone(true);
-      setIsLoading(false);
-      saveRecentSearch(keyword);
-
-      let freshBunjang = cached.bunjang;
-      let freshJoongna = cached.joongna;
-
-      const bg1 = fetch('/api/search/bunjang', { method: 'POST', headers, body })
-        .then((r) => r.json())
-        .then((data) => { freshBunjang = data.results ?? []; setBunjangProducts(freshBunjang); })
-        .catch(() => {});
-      const bg2 = fetch('/api/search/joongna', { method: 'POST', headers, body })
-        .then((r) => r.json())
-        .then((data) => { freshJoongna = data.results ?? []; setJoongnaProducts(freshJoongna); })
-        .catch(() => {});
-
-      Promise.all([bg1, bg2]).then(() => setCached(keyword, freshBunjang, freshJoongna));
-      return;
-    }
-
-    // 캐시 미스: 일반 로딩
-    setIsLoading(true);
-    setBunjangProducts([]);
-    setJoongnaProducts([]);
-    setBunjangDone(false);
-    setJoongnaDone(false);
-
-    let bunjangResult: Product[] = [];
-    let joongnaResult: Product[] = [];
-
-    const fetchBunjang = fetch('/api/search/bunjang', { method: 'POST', headers, body })
-      .then((r) => r.json())
-      .then((data) => { bunjangResult = data.results ?? []; setBunjangProducts(bunjangResult); })
-      .catch(() => setBunjangFailed(true))
-      .finally(() => setBunjangDone(true));
-
-    const fetchJoongna = fetch('/api/search/joongna', { method: 'POST', headers, body })
-      .then((r) => r.json())
-      .then((data) => { joongnaResult = data.results ?? []; setJoongnaProducts(joongnaResult); })
-      .catch(() => setJoongnaFailed(true))
-      .finally(() => setJoongnaDone(true));
-
-    await Promise.all([fetchBunjang, fetchJoongna]);
-    setCached(keyword, bunjangResult, joongnaResult);
-    saveRecentSearch(keyword);
-    await new Promise((r) => setTimeout(r, 900));
-    setIsLoading(false);
-  }, []);
-
-  // URL → 검색: ?q= 파라미터로 바로 검색
+  // keyword 변경 → fetch 트리거 + 최근검색 저장 + 필터 초기화 (유일한 데이터 effect)
   useEffect(() => {
-    const q = searchParams.get('q');
-    if (q) runSearch(q);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!keyword) return;
+    window.scrollTo({ top: 0, behavior: 'instant' });
+    setFilter({ platform: 'all', sort: 'latest', priceMin: 0, priceMax: 0 });
+    recentStore.save(keyword);
+    bunjangStore.ensure(keyword);
+    joongnaStore.ensure(keyword);
+  }, [keyword]);
 
   // 동적 document.title (검색어 반영 → Google 검색 결과 title 개선)
   useEffect(() => {
-    if (currentKeyword) {
-      document.title = `${currentKeyword} 중고 | 번개장터·중고나라 통합검색 - 중고모아`;
-    } else {
-      document.title = '중고모아 - 중고나라 × 번개장터 통합 검색';
-    }
-  }, [currentKeyword]);
+    document.title = keyword
+      ? `${keyword} 중고 | 번개장터·중고나라 통합검색 - 중고모아`
+      : '중고모아 - 중고나라 × 번개장터 통합 검색';
+  }, [keyword]);
 
-  const handleSearch = useCallback((keyword: string) => {
-    if (!keyword.trim()) return;
-    // URL 업데이트 (리렌더 없이 URL 바만 변경, 뒤로가기 지원)
-    window.history.pushState({}, '', `/?q=${encodeURIComponent(keyword.trim())}`);
-    runSearch(keyword);
-  }, [runSearch]);
+  const handleSearch = useCallback((kw: string) => {
+    const k = kw.trim();
+    if (!k) return;
+    if (k === keyword) {
+      // 동일 키워드는 URL이 안 바뀌어 effect가 안 돈다 → 강제 재검색
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      bunjangStore.ensure(k, true);
+      joongnaStore.ensure(k, true);
+    } else {
+      // URL 변경 → useSearchParams 반영 → keyword 갱신 → effect가 fetch
+      window.history.pushState({}, '', `/?q=${encodeURIComponent(k)}`);
+    }
+  }, [keyword]);
+
+  const goHome = useCallback(() => {
+    window.history.pushState({}, '', '/');
+  }, []);
 
   const handleFilterChange = useCallback((partial: Partial<FilterState>) => {
     setFilter((prev) => ({ ...prev, ...partial }));
   }, []);
+
+  // 스토어 상태에서 파생 (idle = effect 실행 전 → 로딩으로 취급해 '결과 없음' 깜빡임 방지)
+  const bunjangProducts = bunjang.data;
+  const joongnaProducts = joongna.data;
+  const bunjangPending = !!keyword && (bunjang.status === 'idle' || bunjang.status === 'loading');
+  const joongnaPending = !!keyword && (joongna.status === 'idle' || joongna.status === 'loading');
+  const bunjangDone = bunjang.status === 'success' || bunjang.status === 'failed';
+  const joongnaDone = joongna.status === 'success' || joongna.status === 'failed';
+  const bunjangFailed = bunjang.status === 'failed';
+  const joongnaFailed = joongna.status === 'failed';
+  const isLoading = bunjangPending || joongnaPending;
 
   const allProducts = useMemo(
     () => [...bunjangProducts, ...joongnaProducts],
@@ -477,9 +452,9 @@ function HomePageInner() {
   const bunjangCount = bunjangProducts.length;
   const joongnaCount = joongnaProducts.length;
 
-  // 검색 전 홈 화면
-  if (!currentKeyword && !isLoading) {
-    return <Hero onSearch={handleSearch} isLoading={isLoading} />;
+  // 검색 전 홈 화면 (keyword 없음)
+  if (!keyword) {
+    return <Hero onSearch={handleSearch} isLoading={false} />;
   }
 
   // 검색 중 또는 결과 화면 (레이아웃 공유)
@@ -487,28 +462,30 @@ function HomePageInner() {
     <div className="min-h-screen bg-gray-50 animate-fadeIn">
       {/* 헤더 — 모바일: 더 작고 컴팩트, 데스크탑: 여유 있는 높이 */}
       <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-sm border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-[13px] sm:py-3 flex items-center gap-2 sm:gap-3">
+        <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-3 sm:px-4 py-[13px] sm:py-3 flex items-center gap-2 sm:gap-3">
           <button
-            onClick={() => { setBunjangProducts([]); setJoongnaProducts([]); setCurrentKeyword(''); window.history.pushState({}, '', '/'); }}
-            className="flex items-center gap-1.5 shrink-0 hover:opacity-80 transition-opacity"
+            onClick={goHome}
+            aria-label="중고모아 홈으로"
+            className="flex items-center gap-1.5 shrink-0 hover:opacity-80 transition-opacity rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
           >
             <Logo size={28} />
             {/* 모바일(< 640px)에서 텍스트 숨김 → 로고만 표시해서 검색바 공간 확보 */}
             <span className="hidden sm:block text-gray-900 font-bold text-sm sm:text-base">중고모아</span>
           </button>
           <div className="flex-1 min-w-0">
-            <SearchBar onSearch={handleSearch} isLoading={isLoading} compact />
+            {/* key={keyword} → 검색어 변경 시 리마운트해 현재 검색어를 input에 채움(모바일 재검색 편의) */}
+            <SearchBar key={keyword} onSearch={handleSearch} isLoading={isLoading} compact initialValue={keyword} />
           </div>
         </div>
       </header>
 
       {/* 본문 */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      <div className="max-w-7xl 2xl:max-w-[1600px] mx-auto px-4 py-6">
         {/* 결과 요약 */}
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
-            <h2 className="font-bold text-gray-900 text-lg flex items-center gap-2">
-              &ldquo;{currentKeyword}&rdquo;
+            <h2 className="font-bold text-gray-900 text-lg flex items-center gap-2" aria-live="polite" aria-atomic="true">
+              &ldquo;{keyword}&rdquo;
               {isLoading ? (
                 <span className="text-sm font-normal text-gray-400 flex items-center gap-1.5">
                   <svg className="w-3.5 h-3.5 animate-spin text-teal-400" fill="none" viewBox="0 0 24 24">
@@ -537,24 +514,33 @@ function HomePageInner() {
 
           {/* 뷰 사이즈 토글 + 공유 */}
           <div className="flex items-center gap-2">
-            <button
-              onClick={async () => {
-                const url = `${location.origin}/?q=${encodeURIComponent(currentKeyword)}`;
-                try {
-                  await navigator.clipboard.writeText(url);
-                } catch {
-                  /* ignore */
-                }
-              }}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100"
-              aria-label="공유"
-              title="URL 복사"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-              </svg>
-            </button>
-            <div className="hidden sm:flex items-center border border-gray-200 rounded-xl overflow-hidden">
+            <div className="relative">
+              <button
+                onClick={async () => {
+                  const url = `${location.origin}/?q=${encodeURIComponent(keyword)}`;
+                  try {
+                    await navigator.clipboard.writeText(url);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1500);
+                  } catch {
+                    /* ignore */
+                  }
+                }}
+                className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400"
+                aria-label="검색결과 링크 복사"
+                title="링크 복사"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
+              </button>
+              {copied && (
+                <span className="absolute top-full right-0 mt-1 px-2 py-1 rounded-md bg-gray-900 text-white text-xs whitespace-nowrap shadow-lg z-40">
+                  링크 복사됨!
+                </span>
+              )}
+            </div>
+            <div className="flex items-center border border-gray-200 rounded-xl overflow-hidden">
               {(['large', 'small'] as const).map((s) => (
                 <button
                   key={s}
@@ -599,6 +585,24 @@ function HomePageInner() {
           joongnaCount={joongnaCount}
         />
 
+        {/* 한쪽 플랫폼만 실패 → 비교의 절반이 누락됐음을 명시(핵심 가치 보호) */}
+        {!isLoading && bunjangFailed !== joongnaFailed && (
+          <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3" role="alert">
+            <svg className="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <p className="flex-1 text-sm text-amber-800">
+              <span className="font-semibold">{bunjangFailed ? '번개장터' : '중고나라'}</span> 결과를 불러오지 못했어요.{' '}
+              <span className="text-amber-600">{bunjangFailed ? '중고나라' : '번개장터'} 결과만 표시 중입니다.</span>
+            </p>
+            <button
+              onClick={() => handleSearch(keyword)}
+              className="shrink-0 text-sm font-semibold text-amber-700 hover:text-amber-900 underline underline-offset-2"
+            >
+              다시 시도
+            </button>
+          </div>
+        )}
 
         {/* 모바일 필터 칩 바 */}
         <div className="md:hidden mb-4 space-y-2.5">
@@ -640,8 +644,8 @@ function HomePageInner() {
           <div className="flex-1 min-w-0">
             {isLoading && allProducts.length === 0 ? (
               /* 아직 결과 없음 → 스켈레톤 */
-              <div className={`grid ${cardSize === 'small' ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4'} gap-3`}>
-                {Array.from({ length: 12 }).map((_, i) => <SkeletonCard key={i} />)}
+              <div className={`grid ${cardSize === 'small' ? 'grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 2xl:grid-cols-7' : 'grid-cols-2 sm:grid-cols-3 md:grid-cols-4 2xl:grid-cols-5'} gap-3 lg:gap-4`}>
+                {Array.from({ length: cardSize === 'small' ? 18 : 12 }).map((_, i) => <SkeletonCard key={i} />)}
               </div>
             ) : !isLoading && bunjangFailed && joongnaFailed ? (
               /* 양쪽 플랫폼 모두 실패 → 에러 상태 */
@@ -652,38 +656,45 @@ function HomePageInner() {
                   네트워크 상태를 확인하거나 잠시 후 다시 시도해주세요
                 </p>
                 <button
-                  onClick={() => handleSearch(currentKeyword)}
+                  onClick={() => handleSearch(keyword)}
                   className="px-5 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-700 transition-colors"
                 >
                   다시 검색
                 </button>
               </div>
             ) : !isLoading && filtered.length === 0 ? (
-              /* 결과 없음 → 액션 유도 */
+              /* 결과 없음 → 회복 경로(인기검색어/필터초기화) */
               <div className="text-center py-16 text-gray-400">
                 <p className="text-5xl mb-4">🔍</p>
                 <p className="font-medium text-gray-600">검색 결과가 없습니다</p>
-                <p className="text-sm mt-1 mb-6">필터를 변경하거나 다른 키워드로 검색해보세요</p>
-                <div className="flex items-center justify-center gap-3">
-                  {(filter.platform !== 'all' || filter.sort !== 'latest' || filter.priceMin > 0 || filter.priceMax > 0) && (
-                    <button
-                      onClick={() => handleFilterChange({ platform: 'all', sort: 'latest', priceMin: 0, priceMax: 0 })}
-                      className="px-4 py-2 bg-teal-500 text-white rounded-xl text-sm font-medium hover:bg-teal-600 transition-colors"
-                    >
-                      필터 초기화
-                    </button>
-                  )}
+                <p className="text-sm mt-1 mb-6">
+                  {(filter.platform !== 'all' || filter.sort !== 'latest' || filter.priceMin > 0 || filter.priceMax > 0)
+                    ? '필터를 바꾸거나 다른 키워드로 검색해보세요'
+                    : '다른 키워드로 검색하거나 아래 인기 검색어를 눌러보세요'}
+                </p>
+                {(filter.platform !== 'all' || filter.sort !== 'latest' || filter.priceMin > 0 || filter.priceMax > 0) && (
                   <button
-                    onClick={() => handleSearch(currentKeyword)}
-                    className="px-4 py-2 border border-gray-200 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                    onClick={() => handleFilterChange({ platform: 'all', sort: 'latest', priceMin: 0, priceMax: 0 })}
+                    className="px-4 py-2 bg-teal-500 text-white rounded-xl text-sm font-medium hover:bg-teal-600 transition-colors mb-6"
                   >
-                    다시 검색
+                    필터 초기화
                   </button>
+                )}
+                <div className="flex flex-wrap items-center justify-center gap-2 max-w-md mx-auto">
+                  {TRENDING_KEYWORDS.map((kw) => (
+                    <button
+                      key={kw}
+                      onClick={() => handleSearch(kw)}
+                      className="px-3 py-1.5 rounded-full bg-white border border-gray-200 text-sm text-gray-600 hover:border-teal-400 hover:text-teal-600 transition-colors"
+                    >
+                      {kw}
+                    </button>
+                  ))}
                 </div>
               </div>
             ) : (
-              /* 결과 표시 (로딩 중 partial 포함) */
-              <ResultGrid products={filtered} size={cardSize} />
+              /* 결과 표시 (로딩 중 partial 포함). key={keyword} → 새 검색 시 페이지네이션 초기화 */
+              <ResultGrid key={keyword} products={filtered} size={cardSize} />
             )}
           </div>
         </div>
