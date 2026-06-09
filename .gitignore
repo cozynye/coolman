@@ -26,3 +26,14 @@ Thumbs.db
 dist/
 build/
 .vercel
+
+# Next.js
+/.next/
+/out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Test / verification artifacts
+/.playwright-mcp/
+/playwriter-screenshots/
+/*.png
