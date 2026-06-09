@@ -20,6 +20,8 @@ function parseListedDateFromImage(imageUrl: string): number | null {
   const [, y, mo, d] = m;
   const ts = Date.UTC(Number(y), Number(mo) - 1, Number(d)) / 1000;
   if (!isFinite(ts) || ts <= 0) return null;
+  // 미래 날짜(오파싱/이상 데이터)는 신뢰 불가 → 미상 처리(카드에서 날짜 숨김)
+  if (ts > Date.now() / 1000 + 86400) return null;
   return Math.floor(ts);
 }
 

@@ -10,7 +10,7 @@ import { usePlatformSearch } from '@/hooks/usePlatformSearch';
 import { TRENDING_KEYWORDS } from '@/lib/popularKeywords';
 import ProductCard from '@/components/ProductCard';
 import SkeletonCard from '@/components/SkeletonCard';
-import SearchProgressBanner from '@/components/SearchProgressBanner';
+import SearchProgressBar from '@/components/SearchProgressBar';
 import FilterSidebar from '@/components/FilterSidebar';
 import type { Product, FilterState, PriceStats } from '@/lib/types';
 
@@ -477,6 +477,8 @@ function HomePageInner() {
             <SearchBar key={keyword} onSearch={handleSearch} isLoading={isLoading} compact initialValue={keyword} />
           </div>
         </div>
+        {/* 검색 진행바 — 헤더 하단 absolute(레이아웃 시프트 없음) */}
+        <SearchProgressBar isLoading={isLoading} bunjangDone={bunjangDone} joongnaDone={joongnaDone} />
       </header>
 
       {/* 본문 */}
@@ -575,15 +577,6 @@ function HomePageInner() {
             </div>
           </div>
         </div>
-
-        {/* 진행률 배너 — 로딩 중에만 표시, 완료 후 collapse */}
-        <SearchProgressBanner
-          isLoading={isLoading}
-          bunjangDone={bunjangDone}
-          joongnaDone={joongnaDone}
-          bunjangCount={bunjangCount}
-          joongnaCount={joongnaCount}
-        />
 
         {/* 한쪽 플랫폼만 실패 → 비교의 절반이 누락됐음을 명시(핵심 가치 보호) */}
         {!isLoading && bunjangFailed !== joongnaFailed && (
