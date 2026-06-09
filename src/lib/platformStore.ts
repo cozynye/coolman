@@ -106,13 +106,17 @@ function createPlatformStore(platform: 'bunjang' | 'joongna') {
       // 세션 내 이미 최신(success) 보유 & 강제 아님 → 재요청 안 함
       if (!force && current && current.status === 'success') return;
 
-      // L2 캐시 시드 → 즉시 표시(stale), 없으면 로딩 표시
-      if (!current || current.status !== 'success') {
+      const hasData = !!current && current.status === 'success' && current.data.length > 0;
+
+      if (force && hasData) {
+        // 명시적 재검색: 기존 데이터를 유지하며 로딩 표시(피드백 보장)
+        set(key, { status: 'loading', data: current!.data });
+      } else if (!current || current.status !== 'success') {
+        // L2 캐시 시드 → 즉시 표시(stale), 없으면 로딩 표시
         const cached = lsGet(key);
         set(key, cached ? { status: 'success', data: cached } : { status: 'loading', data: [] });
       }
 
-      // (백그라운드) fetch
       inflight.add(key);
       const result = await doFetch(kw);
       inflight.delete(key);
@@ -120,8 +124,14 @@ function createPlatformStore(platform: 'bunjang' | 'joongna') {
       if (result.status === 'success') {
         set(key, result);
         lsSet(key, result.data);
+        return;
+      }
+      // fetch 실패
+      if (force) {
+        // 명시적 재검색 실패 → 솔직하게 실패 표시(stale을 '최신'인 척 숨기지 않음)
+        set(key, { status: 'failed', data: [] });
       } else {
-        // fetch 실패: 스테일 캐시가 있으면 화면 비우지 말고 유지
+        // 백그라운드 리페치 실패 → 시드된 stale 유지(SWR), stale 없으면 실패
         const cur = mem.get(key);
         if (!(cur && cur.status === 'success' && cur.data.length > 0)) {
           set(key, { status: 'failed', data: [] });

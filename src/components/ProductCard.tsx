@@ -75,8 +75,7 @@ function ProductCard({ product, size = 'large', priority = false }: Props) {
         <p className={`font-bold text-gray-900 ${size === 'small' ? 'text-base' : 'text-lg'}`}>
           {priceNum === 0 ? '가격 문의' : price}
         </p>
-        {/* text-xs = 12px, WCAG AA 준수 */}
-        <p className="text-gray-400 text-xs mt-1">{dateLabel ? `${dateLabel} · ${platform}` : platform}</p>
+        <p className="text-gray-500 text-xs mt-1">{dateLabel ? `${dateLabel} · ${platform}` : platform}</p>
       </div>
     </a>
   );

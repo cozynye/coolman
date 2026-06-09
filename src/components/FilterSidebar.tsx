@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import type { FilterState, SortOption, PriceStats } from '@/lib/types';
+import { formatKRW } from '@/lib/format';
+import { SORTS, PRICE_PRESETS } from '@/lib/productFilter';
+import PlatformPriceCompare from '@/components/PlatformPriceCompare';
+import type { FilterState, PriceStats } from '@/lib/types';
 
 interface Props {
   filter: FilterState;
@@ -10,38 +13,13 @@ interface Props {
   bunjangCount: number;
   joongnaCount: number;
   stats: PriceStats | null;
+  bunjangStats: PriceStats | null;
+  joongnaStats: PriceStats | null;
   isLoading?: boolean;
 }
 
-const PRICE_PRESETS = [
-  { label: '전체', min: 0, max: 0 },
-  { label: '~10만', min: 0, max: 100_000 },
-  { label: '10~100만', min: 100_000, max: 1_000_000 },
-  { label: '100~300만', min: 1_000_000, max: 3_000_000 },
-  { label: '300만+', min: 3_000_000, max: 0 },
-];
-
-const SORTS: { value: SortOption; label: string }[] = [
-  { value: 'latest', label: '혼합순' },
-  { value: 'price-asc', label: '낮은가격순' },
-  { value: 'price-desc', label: '높은가격순' },
-];
-
-function fmt(n: number) {
-  if (n >= 100_000_000) {
-    const eok = Math.floor(n / 100_000_000);
-    const man = Math.round((n % 100_000_000) / 10_000);
-    return man > 0 ? `${eok}억 ${man}만원` : `${eok}억원`;
-  }
-  if (n >= 10_000) {
-    const man = n / 10_000;
-    return (Number.isInteger(man) ? man : man.toFixed(1)) + '만원';
-  }
-  return n.toLocaleString() + '원';
-}
-
-// 가격 직접입력 — draft 값을 자체 보유하고 '적용' 시에만 onApply.
-// 프리셋 등 외부 변경 시 부모가 key를 바꿔 리마운트시키므로 props→state 동기화 effect가 필요 없다.
+// 가격 직접입력 — draft 값을 자체 보유, '적용' 시에만 onApply.
+// 프리셋 변경 시 부모가 key로 리마운트 → props→state 동기화 effect 불필요.
 function PriceInputs({
   initialMin,
   initialMax,
@@ -68,7 +46,7 @@ function PriceInputs({
           aria-label="최소 가격"
           className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-teal-400"
         />
-        <span className="text-gray-300 text-xs shrink-0">~</span>
+        <span className="text-gray-400 text-xs shrink-0">~</span>
         <input
           type="number"
           inputMode="numeric"
@@ -97,20 +75,18 @@ export default function FilterSidebar({
   bunjangCount,
   joongnaCount,
   stats,
+  bunjangStats,
+  joongnaStats,
   isLoading,
 }: Props) {
-  const activePreset = PRICE_PRESETS.find(
-    (p) => p.min === filter.priceMin && p.max === filter.priceMax
-  );
+  const activePreset = PRICE_PRESETS.find((p) => p.min === filter.priceMin && p.max === filter.priceMax);
 
   return (
     <aside className="w-52 shrink-0 space-y-5">
       {/* 가격 인사이트 */}
       {(stats || isLoading) && (
         <div className="bg-gray-50 rounded-xl p-3.5 space-y-2.5">
-          <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            가격 인사이트
-          </h3>
+          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">가격 인사이트</h3>
           {isLoading && !stats ? (
             <div className="space-y-2">
               <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
@@ -120,12 +96,12 @@ export default function FilterSidebar({
           ) : stats ? (
             <div className="space-y-2">
               {[
-                { label: '최저가', value: fmt(stats.min), color: 'text-blue-500' },
-                { label: '평균가', value: fmt(stats.avg), color: 'text-teal-600' },
-                { label: '최고가', value: fmt(stats.max), color: 'text-gray-700' },
+                { label: '최저가', value: formatKRW(stats.min), color: 'text-blue-600' },
+                { label: '평균가', value: formatKRW(stats.avg), color: 'text-teal-600' },
+                { label: '최고가', value: formatKRW(stats.max), color: 'text-gray-700' },
               ].map((s) => (
                 <div key={s.label} className="flex items-center justify-between">
-                  <span className="text-xs text-gray-400">{s.label}</span>
+                  <span className="text-xs text-gray-500">{s.label}</span>
                   <span className={`text-xs font-semibold ${s.color}`}>{s.value}</span>
                 </div>
               ))}
@@ -134,11 +110,12 @@ export default function FilterSidebar({
         </div>
       )}
 
-      {/* 플랫폼 */}
+      {/* 플랫폼 평균가 비교 — 핵심 value prop */}
+      <PlatformPriceCompare bunjang={bunjangStats} joongna={joongnaStats} />
+
+      {/* 플랫폼 필터 */}
       <div>
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          플랫폼
-        </h3>
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">플랫폼</h3>
         <div className="space-y-1.5">
           {[
             { value: 'all' as const, label: '전체', count: totalCount },
@@ -155,11 +132,7 @@ export default function FilterSidebar({
               }`}
             >
               <span>{opt.label}</span>
-              <span
-                className={`text-xs ${
-                  filter.platform === opt.value ? 'text-teal-500' : 'text-gray-400'
-                }`}
-              >
+              <span className={`text-xs ${filter.platform === opt.value ? 'text-teal-600' : 'text-gray-500'}`}>
                 {opt.count.toLocaleString()}
               </span>
             </button>
@@ -169,9 +142,7 @@ export default function FilterSidebar({
 
       {/* 정렬 */}
       <div>
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          정렬
-        </h3>
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">정렬</h3>
         <div className="space-y-1.5">
           {SORTS.map((s) => (
             <button
@@ -191,9 +162,7 @@ export default function FilterSidebar({
 
       {/* 가격 */}
       <div>
-        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-          가격
-        </h3>
+        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">가격</h3>
         <div className="space-y-1.5">
           {PRICE_PRESETS.map((p) => (
             <button
@@ -209,7 +178,7 @@ export default function FilterSidebar({
             </button>
           ))}
         </div>
-        {/* key로 리마운트 → 프리셋 변경 시 draft가 새 값으로 초기화(동기화 effect 불필요) */}
+        {/* key로 리마운트 → 프리셋 변경 시 draft 초기화 */}
         <PriceInputs
           key={`${filter.priceMin}-${filter.priceMax}`}
           initialMin={filter.priceMin}

@@ -11,11 +11,6 @@ interface Props {
   initialValue?: string;
 }
 
-// page.tsx가 검색 시 recentStore.save를 호출하므로 외부에서도 쓸 수 있게 재노출(호환).
-export function saveRecentSearch(keyword: string) {
-  recentStore.save(keyword);
-}
-
 export default function SearchBar({ onSearch, isLoading, compact = false, initialValue = '' }: Props) {
   const [value, setValue] = useState(initialValue);
   const [open, setOpen] = useState(false);
