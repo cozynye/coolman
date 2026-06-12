@@ -25,6 +25,13 @@ function formatPrice(n: number): string {
   return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') + '원';
 }
 
+// product_image는 템플릿 URL로 온다: .../{pid}_{cnt}_{ts}_w{res}.jpg
+// {cnt}=이미지 순번, {res}=해상도(px). 치환하지 않으면 CDN이 900×1200 원본(~77KB)을
+// 반환하므로 첫 이미지·카드 표시폭에 맞는 webp 썸네일(~9KB)로 고정한다.
+function resolveImageUrl(template: string): string {
+  return template.replace('{cnt}', '1').replace('{res}', '430');
+}
+
 async function fetchPage(keyword: string, page: number): Promise<BunjangItem[]> {
   try {
     const { data } = await axios.get(CONFIG.BUNJANG_API_URL, {
@@ -75,7 +82,7 @@ export async function searchBunjang(keyword: string): Promise<Product[]> {
     update_time: formatDate(item.update_time),
     timestamp: item.update_time,
     status: '판매중',
-    image: item.product_image || item.image || '',
+    image: resolveImageUrl(item.product_image || item.image || ''),
     };
   });
 }

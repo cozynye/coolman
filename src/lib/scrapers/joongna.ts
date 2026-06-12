@@ -54,7 +54,9 @@ async function fetchPage(keyword: string, page: number): Promise<(Product & { _s
       const title = ($img.attr('alt') ?? '').replace(/ 이미지$/, '').trim();
       if (!title) return;
 
-      const image = $img.attr('src') ?? '';
+      // 목록 HTML은 150px 썸네일(?impolicy=thumb&size=150)을 준다. 옵티마이저 없이
+      // 원본을 그대로 표시하므로 카드 폭(레티나 포함)에 맞춰 320px로 올린다.
+      const image = ($img.attr('src') ?? '').replace(/([?&]size=)\d+/, '$1320');
       const rawText = $el.text();
 
       // 제목을 제거한 텍스트에서 가격 찾기 (제목 끝 모델번호/숫자 오염 방지)

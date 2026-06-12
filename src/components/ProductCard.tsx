@@ -1,7 +1,6 @@
 'use client';
 
-import { memo } from 'react';
-import Image from 'next/image';
+import { memo, useState } from 'react';
 import type { Product } from '@/lib/types';
 
 interface Props {
@@ -27,6 +26,10 @@ function formatCardDate(timestampSec: number): string {
 
 function ProductCard({ product, size = 'large', priority = false }: Props) {
   const { platform, title, price, priceNum, link, timestamp, update_time, image, status } = product;
+  // 로드 실패 시 state로 폴백 전환 — DOM src 직접 변경은 React 관리 속성과
+  // 충돌(리렌더 시 원복)하므로 state 리렌더로 교체한다.
+  const [failed, setFailed] = useState(false);
+  const imageSrc = !image || failed ? FALLBACK : image;
   const badge = PLATFORM_STYLE[platform];
   // update_time이 있을 때만 실제 등록일 표시('' = 등록일 미상 → 날짜 숨김)
   const dateLabel = update_time ? formatCardDate(timestamp) : null;
@@ -41,15 +44,15 @@ function ProductCard({ product, size = 'large', priority = false }: Props) {
     >
       {/* 이미지 영역 */}
       <div className="relative aspect-square bg-gray-50 overflow-hidden">
-        <Image
-          src={image || FALLBACK}
+        {/* CDN이 이미 카드 크기 썸네일을 주므로 next/image 불필요 — 순수 img + lazy/fetchpriority로 충분 */}
+        <img
+          src={imageSrc}
           alt={title}
-          fill
-          className="object-cover group-hover:scale-105 transition-transform duration-300"
-          sizes={size === 'large' ? '(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 20vw' : '(max-width: 640px) 33vw, 16vw'}
-          priority={priority}
-          onError={(e) => { (e.currentTarget as HTMLImageElement).src = FALLBACK; }}
-          unoptimized={!image || image.startsWith('data:')}
+          loading={priority ? 'eager' : 'lazy'}
+          fetchPriority={priority ? 'high' : 'auto'}
+          decoding="async"
+          className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+          onError={() => setFailed(true)}
         />
         {/* 플랫폼 뱃지 — 색 + 2자 라벨로 식별성 강화 */}
         <span
