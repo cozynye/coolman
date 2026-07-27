@@ -37,3 +37,6 @@ next-env.d.ts
 /.playwright-mcp/
 /playwriter-screenshots/
 /*.png
+
+# Meilisearch local data (런타임 아티팩트)
+/data.ms/

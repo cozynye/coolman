@@ -2,6 +2,7 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { CONFIG } from '@/lib/config';
 import type { Product } from '@/lib/types';
+import type { AlarmProduct } from '@/lib/alarm/types';
 
 function formatDate(unixSec: number): string {
   const d = new Date(unixSec * 1000);
@@ -93,6 +94,21 @@ async function fetchPage(keyword: string, page: number): Promise<(Product & { _s
   } catch {
     return [];
   }
+}
+
+// 알림(크론) 전용: 1페이지만 — 파싱 로직은 fetchPage 그대로 재사용.
+// 중고나라 웹 검색은 신뢰 가능한 최신순 정렬 파라미터가 확인되지 않아 기본 정렬 사용.
+// (seen-set diff + 등록일 필터가 오탐을 걸러주므로 정렬은 필수가 아님)
+export async function fetchJoongnaLatest(keyword: string): Promise<AlarmProduct[]> {
+  const items = await fetchPage(keyword, 1);
+  const seen = new Set<string>();
+  return items
+    .filter((item) => {
+      if (seen.has(item._seq)) return false;
+      seen.add(item._seq);
+      return true;
+    })
+    .map(({ _seq, ...rest }) => ({ ...rest, id: _seq }));
 }
 
 export async function searchJoongna(keyword: string): Promise<Product[]> {

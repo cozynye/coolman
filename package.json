@@ -17,6 +17,7 @@
   "license": "ISC",
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.0",
+    "@upstash/redis": "^1.38.0",
     "axios": "^1.6.7",
     "cheerio": "^1.0.0-rc.12",
     "next": "^15.5.18",

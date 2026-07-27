@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { CONFIG } from '@/lib/config';
 import type { Product } from '@/lib/types';
+import type { AlarmProduct } from '@/lib/alarm/types';
 
 interface BunjangItem {
   pid: string;
@@ -32,16 +33,21 @@ function resolveImageUrl(template: string): string {
   return template.replace('{cnt}', '1').replace('{res}', '430');
 }
 
-async function fetchPage(keyword: string, page: number): Promise<BunjangItem[]> {
+async function fetchPage(
+  keyword: string,
+  page: number,
+  order: 'score' | 'date' = 'score',
+  n: number = CONFIG.BUNJANG_RESULTS_LIMIT,
+): Promise<BunjangItem[]> {
   try {
     const { data } = await axios.get(CONFIG.BUNJANG_API_URL, {
       params: {
         q: keyword,
-        order: 'score',
+        order,
         page,
         request_id: Date.now() + page,
         stat_device: 'w',
-        n: CONFIG.BUNJANG_RESULTS_LIMIT,
+        n,
         stat_category_required: 1,
         req_ref: 'search',
         version: 5,
@@ -60,6 +66,21 @@ async function fetchPage(keyword: string, page: number): Promise<BunjangItem[]> 
   }
 }
 
+function toProduct(item: BunjangItem): Product {
+  const priceNum = Number(item.price) || 0;
+  return {
+    platform: '번개장터',
+    title: item.name,
+    price: formatPrice(priceNum),
+    priceNum,
+    link: `https://bunjang.co.kr/products/${item.pid}`,
+    update_time: formatDate(item.update_time),
+    timestamp: item.update_time,
+    status: '판매중',
+    image: resolveImageUrl(item.product_image || item.image || ''),
+  };
+}
+
 export async function searchBunjang(keyword: string): Promise<Product[]> {
   const pages = Array.from({ length: CONFIG.BUNJANG_PAGES }, (_, i) => i);
   const pageResults = await Promise.all(pages.map((p) => fetchPage(keyword, p)));
@@ -71,18 +92,13 @@ export async function searchBunjang(keyword: string): Promise<Product[]> {
     return item.type === 'PRODUCT' && item.status === '0';
   });
 
-  return items.map((item) => {
-    const priceNum = Number(item.price) || 0;
-    return {
-    platform: '번개장터',
-    title: item.name,
-    price: formatPrice(priceNum),
-    priceNum,
-    link: `https://bunjang.co.kr/products/${item.pid}`,
-    update_time: formatDate(item.update_time),
-    timestamp: item.update_time,
-    status: '판매중',
-    image: resolveImageUrl(item.product_image || item.image || ''),
-    };
-  });
+  return items.map(toProduct);
+}
+
+// 알림(크론) 전용: 최신순 1페이지만 — 신상품 감지에는 이것으로 충분
+export async function fetchBunjangLatest(keyword: string): Promise<AlarmProduct[]> {
+  const items = await fetchPage(keyword, 0, 'date', 50);
+  return items
+    .filter((item) => item && item.type === 'PRODUCT' && item.status === '0')
+    .map((item) => ({ ...toProduct(item), id: item.pid }));
 }
