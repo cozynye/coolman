@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SORTS, PRICE_PRESETS } from '@/lib/productFilter';
+import { SORTS } from '@/lib/productFilter';
+import PriceRangeSelect from '@/components/PriceRangeSelect';
 import type { FilterState } from '@/lib/types';
 
 interface Props {
@@ -148,24 +149,7 @@ export default function MobileFilterBar({
             {/* 가격대 */}
             <div>
               <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">가격대</p>
-              <div className="grid grid-cols-3 gap-2">
-                {PRICE_PRESETS.map((p) => {
-                  const active = filter.priceMin === p.min && filter.priceMax === p.max;
-                  return (
-                    <button
-                      key={p.label}
-                      onClick={() => onChange({ priceMin: p.min, priceMax: p.max })}
-                      className={`py-2 rounded-xl text-sm font-medium border transition-colors ${
-                        active
-                          ? 'bg-teal-500 text-white border-teal-500'
-                          : 'border-gray-200 text-gray-600'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  );
-                })}
-              </div>
+              <PriceRangeSelect min={filter.priceMin} max={filter.priceMax} onChange={onChange} size="md" />
             </div>
 
             <button

@@ -7,12 +7,18 @@ export const SORTS: { value: SortOption; label: string }[] = [
   { value: 'price-desc', label: '높은가격순' },
 ];
 
-export const PRICE_PRESETS = [
-  { label: '전체', min: 0, max: 0 },
-  { label: '~10만', min: 0, max: 100_000 },
-  { label: '10~100만', min: 100_000, max: 1_000_000 },
-  { label: '100~300만', min: 1_000_000, max: 3_000_000 },
-  { label: '300만+', min: 3_000_000, max: 0 },
+// 가격 최소/최대 드롭다운 공용 단계. value=0 은 '제한없음'(하한=0 / 상한=무제한).
+// 최소·최대를 독립적으로 골라 '100만 이상 전체'(최소 100만 · 최대 제한없음) 같은 개방형 구간도 표현.
+export const PRICE_STEPS: { value: number; label: string }[] = [
+  { value: 0, label: '제한없음' },
+  { value: 50_000, label: '5만' },
+  { value: 100_000, label: '10만' },
+  { value: 300_000, label: '30만' },
+  { value: 500_000, label: '50만' },
+  { value: 1_000_000, label: '100만' },
+  { value: 2_000_000, label: '200만' },
+  { value: 3_000_000, label: '300만' },
+  { value: 5_000_000, label: '500만' },
 ];
 
 // 필터 + 정렬. 'latest'(혼합순)는 전체 선택 시 두 플랫폼을 교차 병합.

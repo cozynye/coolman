@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import { formatKRW } from '@/lib/format';
-import { SORTS, PRICE_PRESETS } from '@/lib/productFilter';
+import { SORTS } from '@/lib/productFilter';
 import PlatformPriceCompare from '@/components/PlatformPriceCompare';
+import PriceRangeSelect from '@/components/PriceRangeSelect';
 import type { FilterState, PriceStats } from '@/lib/types';
 
 interface Props {
@@ -18,56 +18,6 @@ interface Props {
   isLoading?: boolean;
 }
 
-// 가격 직접입력 — draft 값을 자체 보유, '적용' 시에만 onApply.
-// 프리셋 변경 시 부모가 key로 리마운트 → props→state 동기화 effect 불필요.
-function PriceInputs({
-  initialMin,
-  initialMax,
-  onApply,
-}: {
-  initialMin: number;
-  initialMax: number;
-  onApply: (min: number, max: number) => void;
-}) {
-  const [min, setMin] = useState(initialMin ? String(initialMin) : '');
-  const [max, setMax] = useState(initialMax ? String(initialMax) : '');
-  const apply = () => onApply(Number(min) || 0, Number(max) || 0);
-
-  return (
-    <div className="mt-3 space-y-2">
-      <div className="flex items-center gap-1.5">
-        <input
-          type="number"
-          inputMode="numeric"
-          placeholder="최소"
-          value={min}
-          onChange={(e) => setMin(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && apply()}
-          aria-label="최소 가격"
-          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-teal-400"
-        />
-        <span className="text-gray-400 text-xs shrink-0">~</span>
-        <input
-          type="number"
-          inputMode="numeric"
-          placeholder="최대"
-          value={max}
-          onChange={(e) => setMax(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && apply()}
-          aria-label="최대 가격"
-          className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-teal-400"
-        />
-      </div>
-      <button
-        onClick={apply}
-        className="w-full py-1.5 text-xs font-medium bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
-      >
-        적용
-      </button>
-    </div>
-  );
-}
-
 export default function FilterSidebar({
   filter,
   onChange,
@@ -79,8 +29,6 @@ export default function FilterSidebar({
   joongnaStats,
   isLoading,
 }: Props) {
-  const activePreset = PRICE_PRESETS.find((p) => p.min === filter.priceMin && p.max === filter.priceMax);
-
   return (
     <aside className="w-52 shrink-0 space-y-5">
       {/* 가격 인사이트 */}
@@ -163,28 +111,7 @@ export default function FilterSidebar({
       {/* 가격 */}
       <div>
         <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">가격</h3>
-        <div className="space-y-1.5">
-          {PRICE_PRESETS.map((p) => (
-            <button
-              key={p.label}
-              onClick={() => onChange({ priceMin: p.min, priceMax: p.max })}
-              className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                activePreset?.label === p.label
-                  ? 'bg-teal-50 text-teal-700 font-semibold'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
-        </div>
-        {/* key로 리마운트 → 프리셋 변경 시 draft 초기화 */}
-        <PriceInputs
-          key={`${filter.priceMin}-${filter.priceMax}`}
-          initialMin={filter.priceMin}
-          initialMax={filter.priceMax}
-          onApply={(min, max) => onChange({ priceMin: min, priceMax: max })}
-        />
+        <PriceRangeSelect min={filter.priceMin} max={filter.priceMax} onChange={onChange} />
       </div>
     </aside>
   );
